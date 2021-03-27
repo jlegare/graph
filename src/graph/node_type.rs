@@ -31,7 +31,6 @@ where
     payload: NodePayloadType,
 
     cost: f64,
-    state: NodeState,
 }
 
 impl<NodePayloadType> NodeType<NodePayloadType>
@@ -46,7 +45,6 @@ where
             payload,
 
             cost: f64::INFINITY,
-            state: NodeState::Undiscovered,
         }
     }
 
@@ -86,14 +84,6 @@ where
 
     pub fn payload_of(&self) -> NodePayloadType {
         self.payload
-    }
-
-    pub fn state(&mut self, state: NodeState) {
-        self.state = state
-    }
-
-    pub fn state_of(&self) -> NodeState {
-        self.state
     }
 }
 

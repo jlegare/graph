@@ -97,7 +97,10 @@ where
         }
     }
 
-    pub fn dfs(&mut self, source_node_id: NodeIdType) -> Result<Vec<NodeIdType>, String> {
+    pub fn dfs(
+        &mut self,
+        source_node_id: NodeIdType,
+    ) -> Result<(Vec<NodeIdType>, HashMap<NodeIdType, NodeState>), String> {
         self.dfs_for_each(source_node_id, |_, _| {})
     }
 
@@ -105,7 +108,7 @@ where
         &mut self,
         source_node_id: NodeIdType,
         mut callback: CallbackType,
-    ) -> Result<Vec<NodeIdType>, String>
+    ) -> Result<(Vec<NodeIdType>, HashMap<NodeIdType, NodeState>), String>
     where
         CallbackType:
             FnMut(Option<&mut EdgeType<EdgePayloadType>>, &mut NodeType<NodePayloadType>) -> (),
@@ -167,10 +170,6 @@ where
             }
         }
 
-        self.nodes
-            .iter_mut()
-            .for_each(|(node_id, node)| node.state(*node_states.get(node_id).unwrap()));
-
         lexicographic.iter().for_each(|(edge_id, node_id)| {
             let edges = &mut self.edges;
             let nodes = &mut self.nodes;
@@ -180,7 +179,7 @@ where
             callback(edge, node);
         });
 
-        Ok(sorted)
+        Ok((sorted, node_states))
     }
 
     fn shortest_path(
@@ -377,7 +376,7 @@ mod tests {
         });
 
         match graph.dfs(node_ids[0]) {
-            Ok(sorted) => {
+            Ok((sorted, _)) => {
                 assert_eq!(sorted.len(), node_ids.len());
                 node_ids
                     .iter()
@@ -447,7 +446,7 @@ mod tests {
             .collect();
         let mut visited = vec![];
 
-        graph
+        let (_, states) = graph
             .dfs_for_each(node_ids[0], |_, node| {
                 visited.push(node.id_of());
             })
@@ -455,10 +454,9 @@ mod tests {
 
         assert_eq!(lexicographical, visited);
 
-        graph
-            .nodes
+        node_ids
             .iter()
-            .for_each(|(_, node)| assert_eq!(node.state_of(), Finished));
+            .for_each(|node_id| assert_eq!(states[node_id], Finished));
     }
 
     #[test]
@@ -492,7 +490,7 @@ mod tests {
             .collect();
         let mut visited = vec![];
 
-        graph
+        let (_, states) = graph
             .dfs_for_each(node_ids[0], |_, node| {
                 visited.push(node.id_of());
             })
@@ -500,10 +498,9 @@ mod tests {
 
         assert_eq!(lexicographical, visited);
 
-        graph
-            .nodes
+        node_ids
             .iter()
-            .for_each(|(_, node)| assert_eq!(node.state_of(), Finished));
+            .for_each(|node_id| assert_eq!(states[node_id], Finished));
     }
 
     #[test]
@@ -584,12 +581,11 @@ mod tests {
         let name = "SHORTEST PATH";
         let mut graph: GraphType<u32, u32> = GraphType::new(name);
         let node_payloads = vec![1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11];
-        let node_ids = match graph.add_nodes(&node_payloads) {
+        let _node_ids = match graph.add_nodes(&node_payloads) {
             Ok(node_ids) => node_ids,
             Err(e) => panic!(e),
         };
 
-        //FIXME - This sets the payloads not the weights, it's not working as intended I think.
         let edges_by_payload = vec![
             (1, 2, 1, 1),
             (1, 5, 2, 2),
@@ -606,7 +602,7 @@ mod tests {
             (10, 11, 3, 3),
         ];
 
-        let edge_ids: Vec<EdgeIdType> = edges_by_payload
+        let _edge_ids: Vec<EdgeIdType> = edges_by_payload
             .iter()
             .map(|(from, to, payload, weight)| {
                 let edge_id = graph.add_edge_by_payload(*from, *to, *payload).unwrap();
@@ -629,7 +625,7 @@ mod tests {
             .collect();
         let expected_cost = 9.0;
 
-        let sorted = graph.dfs(source_node_id).unwrap();
+        let (sorted, _) = graph.dfs(source_node_id).unwrap();
         let (result_cost, result_edges, result_path) = graph
             .shortest_path(&sorted, &source_node_id, &target_node_id)
             .unwrap();
