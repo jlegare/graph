@@ -129,9 +129,7 @@ where
             None => return Err(format!("Unable to find node {:?}.", source_node_id)),
         };
 
-        // println!("PROCESSING {:?}", source_node_id);
         *(node_states.get_mut(&source_node_id).unwrap()) = NodeState::Discovered;
-        // callback(None, &mut self.nodes[&source_node_id]);
         lexicographic.push((None, source_node_id));
 
         // But from now on, we can play fast and loose, because the only to construct a graph is through the API we
@@ -142,8 +140,6 @@ where
         let mut sorted: Vec<NodeIdType> = vec![];
 
         while !stack.is_empty() {
-            // println!("STARTING");
-
             let stack_item = stack.last_mut().unwrap();
             let edges = &mut stack_item.edges;
 
@@ -151,20 +147,15 @@ where
                 let edge_id = edges.remove(0);
                 let (_, to) = self.edges[edge_id].vertices_of();
 
-                // println!("CONSIDERING {:?} {:?}", to, node_states.get(&to).unwrap());
-
                 if *(node_states.get(&to).unwrap()) == NodeState::Discovered {
                     return Err(format!("Detected a cycle at node {:?}!", to));
                 } else if *(node_states.get(&to).unwrap()) == NodeState::Undiscovered {
-                    // println!("PROCESSING {:?}", to);
                     *(node_states.get_mut(&to).unwrap()) = NodeState::Discovered;
-                    // callback(Some(&self.edges[edge_id]), &mut self.nodes[&to]);
                     lexicographic.push((Some(*edge_id), to));
                     stack.push(StackItemType::new(to, self.nodes[&to].outgoing_of()));
                 }
             } else {
                 let node = stack.pop().unwrap().node;
-                // println!("FINISHING {:?}", node);
                 node_states.insert(node, NodeState::Finished);
                 sorted.push(node);
             }
