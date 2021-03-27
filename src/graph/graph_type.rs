@@ -309,7 +309,7 @@ mod tests {
         let payloads = vec!["FIRST", "SECOND", "THIRD"];
         let node_ids = match graph.add_nodes(&payloads) {
             Ok(node_ids) => node_ids,
-            Err(e) => panic!(e),
+            Err(e) => std::panic::panic_any(e),
         };
 
         assert_eq!(graph.nodes.len(), payloads.len());
@@ -325,14 +325,14 @@ mod tests {
         let payloads = vec!["FIRST", "SECOND", "THIRD", "FOURTH", "FIFTH"];
         let node_ids = match graph.add_nodes(&payloads) {
             Ok(node_ids) => node_ids,
-            Err(e) => panic!(e),
+            Err(e) => std::panic::panic_any(e),
         };
 
         let mut edge_ids = vec![];
         node_ids[1..].iter().fold(node_ids[0], |from, &to| {
             match graph.add_edge(from, to, (from, to)) {
                 Ok(edge_id) => edge_ids.push(edge_id),
-                Err(e) => panic!(e),
+                Err(e) => std::panic::panic_any(e),
             };
             to
         });
@@ -354,14 +354,14 @@ mod tests {
         let payloads = vec!["FIRST", "SECOND", "THIRD", "FOURTH", "FIFTH"];
         let node_ids = match graph.add_nodes(&payloads) {
             Ok(node_ids) => node_ids,
-            Err(e) => panic!(e),
+            Err(e) => std::panic::panic_any(e),
         };
 
         let mut edge_ids = vec![];
         node_ids[1..].iter().fold(node_ids[0], |from, &to| {
             match graph.add_edge(from, to, (from, to)) {
                 Ok(edge_id) => edge_ids.push(edge_id),
-                Err(e) => panic!(e),
+                Err(e) => std::panic::panic_any(e),
             };
             to
         });
@@ -375,7 +375,7 @@ mod tests {
                     .zip(sorted.iter())
                     .for_each(|(left, right)| assert_eq!(left, right));
             }
-            Err(e) => panic!(e),
+            Err(e) => std::panic::panic_any(e),
         };
     }
 
@@ -563,7 +563,7 @@ mod tests {
             result.push(node.payload_of());
         }) {
             Ok(_) => (),
-            Err(e) => panic!(e),
+            Err(e) => std::panic::panic_any(e),
         };
     }
 
@@ -574,7 +574,7 @@ mod tests {
         let node_payloads = vec![1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11];
         let _node_ids = match graph.add_nodes(&node_payloads) {
             Ok(node_ids) => node_ids,
-            Err(e) => panic!(e),
+            Err(e) => std::panic::panic_any(e),
         };
 
         let edges_by_payload = vec![
