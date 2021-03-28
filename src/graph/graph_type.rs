@@ -124,9 +124,8 @@ where
 
         // Let's be careful with the entry point node ID we were given ... we'll ensure it actually belongs to our graph
         // before continuing.
-        match self.nodes.get_mut(&source_node_id) {
-            Some(_) => node_states.insert(source_node_id, NodeState::Undiscovered),
-            None => return Err(format!("Unable to find node {:?}.", source_node_id)),
+        if let None = self.nodes.get_mut(&source_node_id) {
+            return Err(format!("Unable to find node {:?}.", source_node_id));
         };
 
         *(node_states.get_mut(&source_node_id).unwrap()) = NodeState::Discovered;
