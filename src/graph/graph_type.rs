@@ -132,7 +132,7 @@ where
         *(node_states.get_mut(&source_node_id).unwrap()) = NodeState::Discovered;
         lexicographic.push((None, source_node_id));
 
-        // But from now on, we can play fast and loose, because the only to construct a graph is through the API we
+        // But from now on, we can play fast and loose, because the only way to construct a graph is through the API we
         // provided, we guarantees consistency.
         let stack_item =
             StackItemType::new(source_node_id, self.nodes[&source_node_id].outgoing_of());
