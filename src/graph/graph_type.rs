@@ -124,39 +124,50 @@ where
 
         // Let's be careful with the entry point node ID we were given ... we'll ensure it actually belongs to our graph
         // before continuing.
-        if let None = self.nodes.get_mut(&source_node_id) {
+        if let None = self.nodes.get(&source_node_id) {
             return Err(format!("Unable to find node {:?}.", source_node_id));
         };
 
-        *(node_states.get_mut(&source_node_id).unwrap()) = NodeState::Discovered;
-        lexicographic.push((None, source_node_id));
+        let targets_of = |node| {
+            self.nodes[&node]
+                .outgoing_of()
+                .iter()
+                .map(|edge| (Some(*edge), self.edges[edge].vertices_of().1))
+                .collect()
+        };
 
         // But from now on, we can play fast and loose, because the only way to construct a graph is through the API we
         // provided, we guarantees consistency.
-        let stack_item =
-            StackItemType::new(source_node_id, self.nodes[&source_node_id].outgoing_of());
+        let stack_item = StackItemType {
+            origin: None,
+            targets: vec![(None, source_node_id)],
+        };
         let mut stack: Vec<StackItemType> = vec![stack_item];
         let mut sorted: Vec<NodeIdType> = vec![];
 
         while !stack.is_empty() {
             let stack_item = stack.last_mut().unwrap();
-            let edges = &mut stack_item.edges;
+            let targets = &mut stack_item.targets;
 
-            if !edges.is_empty() {
-                let edge_id = edges.remove(0);
-                let (_, to) = self.edges[edge_id].vertices_of();
+            if !targets.is_empty() {
+                let target = targets.remove(0);
+                let to = target.1;
 
                 if *(node_states.get(&to).unwrap()) == NodeState::Discovered {
                     return Err(format!("Detected a cycle at node {:?}!", to));
                 } else if *(node_states.get(&to).unwrap()) == NodeState::Undiscovered {
                     *(node_states.get_mut(&to).unwrap()) = NodeState::Discovered;
-                    lexicographic.push((Some(*edge_id), to));
-                    stack.push(StackItemType::new(to, self.nodes[&to].outgoing_of()));
+                    lexicographic.push((target.0.and_then(|edge_id| Some(*edge_id)), to));
+                    stack.push(StackItemType {
+                        origin: Some(to),
+                        targets: targets_of(to),
+                    });
                 }
             } else {
-                let node = stack.pop().unwrap().node;
-                node_states.insert(node, NodeState::Finished);
-                sorted.push(node);
+                if let Some(node) = stack.pop().unwrap().origin {
+                    node_states.insert(node, NodeState::Finished);
+                    sorted.push(node);
+                }
             }
         }
 
@@ -257,14 +268,8 @@ where
  */
 #[derive(Debug)]
 struct StackItemType<'a> {
-    node: NodeIdType,
-    edges: Vec<&'a EdgeIdType>,
-}
-
-impl<'a> StackItemType<'a> {
-    fn new(node: NodeIdType, edges: Vec<&'a EdgeIdType>) -> Self {
-        StackItemType { node, edges }
-    }
+    origin: Option<NodeIdType>,
+    targets: Vec<(Option<&'a EdgeIdType>, NodeIdType)>,
 }
 
 /* ------------------------------------------------------------------------
