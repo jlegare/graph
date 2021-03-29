@@ -29,60 +29,50 @@ where
     incoming: Vec<EdgeIdType>,
     outgoing: Vec<EdgeIdType>,
     payload: NodePayloadType,
-
-    cost: f64,
 }
 
 impl<NodePayloadType> NodeType<NodePayloadType>
 where
     NodePayloadType: Clone + Copy,
 {
-    pub fn new(id: usize, payload: NodePayloadType) -> Self {
+    pub(super) fn new(id: usize, payload: NodePayloadType) -> Self {
         Self {
             id: NodeIdType { id },
             incoming: vec![],
             outgoing: vec![],
             payload,
-
-            cost: f64::INFINITY,
         }
     }
 
-    pub fn reset(&mut self) {
-        self.cost = f64::INFINITY;
-    }
+    pub(super) fn reset(&mut self) {}
 
-    pub fn id_of(&self) -> NodeIdType {
+    pub(super) fn id_of(&self) -> NodeIdType {
         self.id
     }
 
-    pub fn add_incoming(&mut self, edge_id: EdgeIdType) {
+    pub(super) fn add_incoming(&mut self, edge_id: EdgeIdType) {
         match self.incoming.iter().find(|&id| *id == edge_id) {
             None => self.incoming.push(edge_id),
             _ => {}
         }
     }
 
-    pub fn add_outgoing(&mut self, edge_id: EdgeIdType) {
+    pub(super) fn add_outgoing(&mut self, edge_id: EdgeIdType) {
         match self.outgoing.iter().find(|&id| *id == edge_id) {
             None => self.outgoing.push(edge_id),
             _ => {}
         }
     }
 
-    pub fn cost(&mut self, cost: f64) {
-        self.cost = cost;
-    }
-
-    pub fn outgoing_of(&self) -> Vec<&EdgeIdType> {
+    pub(super) fn outgoing_of(&self) -> Vec<&EdgeIdType> {
         self.outgoing.iter().collect()
     }
 
-    pub fn payload(&mut self, payload: NodePayloadType) {
+    pub(super) fn payload(&mut self, payload: NodePayloadType) {
         self.payload = payload
     }
 
-    pub fn payload_of(&self) -> NodePayloadType {
+    pub(super) fn payload_of(&self) -> NodePayloadType {
         self.payload
     }
 }
