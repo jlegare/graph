@@ -97,21 +97,21 @@ where
         }
     }
 
-    pub fn dfs(
-        &mut self,
+    pub fn depth_first(
+        &self,
         source_node_id: NodeIdType,
     ) -> Result<(Vec<NodeIdType>, HashMap<NodeIdType, NodeState>), String> {
-        self.dfs_for_each(source_node_id, |_, _| {})
+        self.depth_first_for_each(source_node_id, |_, _| {})
     }
 
-    pub fn dfs_for_each<CallbackType>(
-        &mut self,
+    pub fn depth_first_for_each<CallbackType>(
+        &self,
         source_node_id: NodeIdType,
         mut callback: CallbackType,
     ) -> Result<(Vec<NodeIdType>, HashMap<NodeIdType, NodeState>), String>
     where
         CallbackType:
-            FnMut(Option<&mut EdgeType<EdgePayloadType>>, &mut NodeType<NodePayloadType>) -> (),
+            FnMut(Option<&EdgeIdType>, &NodeIdType) -> (),
     {
         let mut lexicographic: Vec<(Option<EdgeIdType>, NodeIdType)> = vec![];
         let mut node_states: HashMap<NodeIdType, NodeState> = self
@@ -119,8 +119,6 @@ where
             .keys()
             .map(|node_id| (*node_id, NodeState::Undiscovered))
             .collect();
-
-        self.nodes.values_mut().for_each(|node| node.reset());
 
         // Let's be careful with the entry point node ID we were given ... we'll ensure it actually belongs to our graph
         // before continuing.
@@ -172,12 +170,7 @@ where
         }
 
         lexicographic.iter().for_each(|(edge_id, node_id)| {
-            let edges = &mut self.edges;
-            let nodes = &mut self.nodes;
-
-            let edge = edge_id.map(|edge_id| edges.get_mut(&edge_id).unwrap());
-            let node = &mut nodes.get_mut(node_id).unwrap();
-            callback(edge, node);
+            callback(edge_id.as_ref(), node_id);
         });
 
         Ok((sorted, node_states))
@@ -370,7 +363,7 @@ mod tests {
             to
         });
 
-        match graph.dfs(node_ids[0]) {
+        match graph.depth_first(node_ids[0]) {
             Ok((sorted, _)) => {
                 assert_eq!(sorted.len(), node_ids.len());
                 node_ids
@@ -400,9 +393,9 @@ mod tests {
         let mut result = Vec::<u32>::new();
 
         graph
-            .dfs_for_each(node_ids[0], |_, node| {
-                node.payload(node.payload_of() * 2);
-                result.push(node.payload_of());
+            .depth_first_for_each(node_ids[0], |_, node_id| {
+                let node = &graph.nodes[node_id];
+                result.push(node.payload_of() * 2);
             })
             .unwrap();
 
@@ -442,8 +435,8 @@ mod tests {
         let mut visited = vec![];
 
         let (_, states) = graph
-            .dfs_for_each(node_ids[0], |_, node| {
-                visited.push(node.id_of());
+            .depth_first_for_each(node_ids[0], |_, node| {
+                visited.push(*node);
             })
             .unwrap();
 
@@ -486,8 +479,8 @@ mod tests {
         let mut visited = vec![];
 
         let (_, states) = graph
-            .dfs_for_each(node_ids[0], |_, node| {
-                visited.push(node.id_of());
+            .depth_first_for_each(node_ids[0], |_, node| {
+                visited.push(*node);
             })
             .unwrap();
 
@@ -524,8 +517,8 @@ mod tests {
         let mut result = vec![];
 
         graph
-            .dfs_for_each(node_ids[0], |_, node| {
-                result.push(node.payload_of());
+            .depth_first_for_each(node_ids[0], |_, node| {
+                result.push(graph.nodes[node].payload_of());
             })
             .unwrap();
         result
@@ -536,8 +529,8 @@ mod tests {
         let expected = [1, 7, 4, 6, 3, 5];
         result.clear();
         graph
-            .dfs_for_each(node_ids[6], |_, node| {
-                result.push(node.payload_of());
+            .depth_first_for_each(node_ids[6], |_, node| {
+                result.push(graph.nodes[node].payload_of());
             })
             .unwrap();
         result
@@ -563,8 +556,8 @@ mod tests {
 
         let mut result = vec![];
 
-        match graph.dfs_for_each(node_ids[0], |_, node| {
-            result.push(node.payload_of());
+        match graph.depth_first_for_each(node_ids[0], |_, node| {
+            result.push(graph.nodes[node].payload_of());
         }) {
             Ok(_) => (),
             Err(e) => std::panic::panic_any(e),
@@ -620,7 +613,7 @@ mod tests {
             .collect();
         let expected_cost = 9.0;
 
-        let (sorted, _) = graph.dfs(source_node_id).unwrap();
+        let (sorted, _) = graph.depth_first(source_node_id).unwrap();
         let (result_cost, result_edges, result_path) = graph
             .shortest_path(&sorted, &source_node_id, &target_node_id)
             .unwrap();
