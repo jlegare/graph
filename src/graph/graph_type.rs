@@ -130,7 +130,7 @@ where
             self.nodes[&node]
                 .outgoing_of()
                 .iter()
-                .map(|edge| (Some(*edge), self.edges[edge].vertices_of().1))
+                .map(|edge| TargetItemType { via: Some(*edge), target: self.edges[edge].vertices_of().1 })
                 .collect()
         };
 
@@ -138,7 +138,7 @@ where
         // provided, we guarantees consistency.
         let stack_item = StackItemType {
             origin: None,
-            targets: vec![(None, source_node_id)],
+            targets: vec![TargetItemType { via: None, target: source_node_id, }],
         };
         let mut stack: Vec<StackItemType> = vec![stack_item];
         let mut sorted: Vec<NodeIdType> = vec![];
@@ -148,14 +148,14 @@ where
             let targets = &mut stack_item.targets;
 
             if !targets.is_empty() {
-                let target = targets.remove(0);
-                let to = target.1;
+                let target_item = targets.remove(0);
+                let to = target_item.target;
 
                 if *(node_states.get(&to).unwrap()) == NodeState::Discovered {
                     return Err(format!("Detected a cycle at node {:?}!", to));
                 } else if *(node_states.get(&to).unwrap()) == NodeState::Undiscovered {
                     *(node_states.get_mut(&to).unwrap()) = NodeState::Discovered;
-                    lexicographic.push((target.0.and_then(|edge_id| Some(*edge_id)), to));
+                    lexicographic.push((target_item.via.and_then(|edge_id| Some(*edge_id)), to));
                     stack.push(StackItemType {
                         origin: Some(to),
                         targets: targets_of(to),
@@ -262,7 +262,16 @@ where
 #[derive(Debug)]
 struct StackItemType<'a> {
     origin: Option<NodeIdType>,
-    targets: Vec<(Option<&'a EdgeIdType>, NodeIdType)>,
+    targets: Vec<TargetItemType<'a>>,
+}
+
+/* ------------------------------------------------------------------------
+ * TARGET ITEM TYPE ... This is a helper struct used in dfs(), to (hopefully) clarify the code.
+ */
+#[derive(Debug)]
+struct TargetItemType<'a> {
+    via: Option<&'a EdgeIdType>,
+    target: NodeIdType,
 }
 
 /* ------------------------------------------------------------------------
