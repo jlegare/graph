@@ -28,7 +28,12 @@ impl<EdgePayloadType> EdgeType<EdgePayloadType>
 where
     EdgePayloadType: Clone + Copy,
 {
-    pub fn new(id: usize, from: NodeIdType, to: NodeIdType, payload: EdgePayloadType) -> Self {
+    pub(super) fn new(
+        id: usize,
+        from: NodeIdType,
+        to: NodeIdType,
+        payload: EdgePayloadType,
+    ) -> Self {
         Self {
             id: EdgeIdType { id },
             from,
@@ -38,27 +43,27 @@ where
         }
     }
 
-    pub fn id_of(&self) -> EdgeIdType {
+    pub(super) fn id_of(&self) -> EdgeIdType {
         self.id
     }
 
-    pub fn payload_of(&self) -> EdgePayloadType {
+    pub(super) fn payload_of(&self) -> EdgePayloadType {
         self.payload
     }
 
-    pub fn payload(&mut self, payload: EdgePayloadType) {
+    pub(super) fn payload(&mut self, payload: EdgePayloadType) {
         self.payload = payload;
     }
 
-    pub fn vertices_of(&self) -> (NodeIdType, NodeIdType) {
+    pub(super) fn vertices_of(&self) -> (NodeIdType, NodeIdType) {
         (self.from, self.to)
     }
 
-    pub fn weight(&mut self, weight: f64) {
+    pub(super) fn weight(&mut self, weight: f64) {
         self.weight = weight;
     }
 
-    pub fn weight_of(&self) -> f64 {
+    pub(super) fn weight_of(&self) -> f64 {
         self.weight
     }
 }
