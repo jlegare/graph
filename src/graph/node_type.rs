@@ -44,8 +44,6 @@ where
         }
     }
 
-    pub(super) fn reset(&mut self) {}
-
     pub(super) fn id_of(&self) -> NodeIdType {
         self.id
     }
