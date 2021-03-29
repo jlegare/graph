@@ -12,7 +12,7 @@ pub struct NodeIdType {
 }
 
 impl NodeIdType {
-    pub fn new(id: usize) -> Self {
+    pub(super) fn new(id: usize) -> Self {
         Self { id }
     }
 }
