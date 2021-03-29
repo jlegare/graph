@@ -110,7 +110,7 @@ where
         mut callback: CallbackType,
     ) -> Result<(Vec<NodeIdType>, HashMap<NodeIdType, NodeState>), String>
     where
-        CallbackType: FnMut(Option<&EdgeIdType>, &NodeIdType) -> (),
+        CallbackType: FnMut(Option<&EdgeIdType>, &NodeIdType),
     {
         let mut lexicographic: Vec<(Option<EdgeIdType>, NodeIdType)> = vec![];
         let mut node_states: HashMap<NodeIdType, NodeState> = self
@@ -166,11 +166,9 @@ where
                         targets: targets_of(to),
                     });
                 }
-            } else {
-                if let Some(node) = stack.pop().unwrap().origin {
-                    node_states.insert(node, NodeState::Finished);
-                    sorted.push(node);
-                }
+            } else if let Some(node) = stack.pop().unwrap().origin {
+                node_states.insert(node, NodeState::Finished);
+                sorted.push(node);
             }
         }
 
@@ -181,7 +179,7 @@ where
         Ok((sorted, node_states))
     }
 
-    fn shortest_path(
+    pub fn shortest_path(
         &mut self,
         sorted: &Vec<NodeIdType>,
         source_node_id: &NodeIdType,
