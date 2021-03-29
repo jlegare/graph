@@ -110,8 +110,7 @@ where
         mut callback: CallbackType,
     ) -> Result<(Vec<NodeIdType>, HashMap<NodeIdType, NodeState>), String>
     where
-        CallbackType:
-            FnMut(Option<&EdgeIdType>, &NodeIdType) -> (),
+        CallbackType: FnMut(Option<&EdgeIdType>, &NodeIdType) -> (),
     {
         let mut lexicographic: Vec<(Option<EdgeIdType>, NodeIdType)> = vec![];
         let mut node_states: HashMap<NodeIdType, NodeState> = self
@@ -130,7 +129,10 @@ where
             self.nodes[&node]
                 .outgoing_of()
                 .iter()
-                .map(|edge| TargetItemType { via: Some(*edge), target: self.edges[edge].vertices_of().1 })
+                .map(|edge| TargetItemType {
+                    via: Some(*edge),
+                    target: self.edges[edge].vertices_of().1,
+                })
                 .collect()
         };
 
@@ -138,7 +140,10 @@ where
         // provided, we guarantees consistency.
         let stack_item = StackItemType {
             origin: None,
-            targets: vec![TargetItemType { via: None, target: source_node_id, }],
+            targets: vec![TargetItemType {
+                via: None,
+                target: source_node_id,
+            }],
         };
         let mut stack: Vec<StackItemType> = vec![stack_item];
         let mut sorted: Vec<NodeIdType> = vec![];
