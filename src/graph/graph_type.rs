@@ -97,6 +97,13 @@ where
         }
     }
 
+    pub fn dfs_iter(
+        &self,
+        source_node_id: NodeIdType,
+    ) -> DepthFirstIterator<EdgePayloadType, NodePayloadType> {
+        DepthFirstIterator::new(source_node_id, &self.edges, &self.nodes)
+    }
+
     pub fn depth_first(
         &self,
         source_node_id: NodeIdType,
@@ -256,6 +263,105 @@ where
             path.iter().map(|i| edges[i]).rev().collect(),
             path.iter().map(|i| *i).rev().collect(),
         ))
+    }
+}
+
+/* ------------------------------------------------------------------------
+ * DEPTH FIRST ITERATOR
+ */
+#[derive(Debug)]
+pub struct DepthFirstIterator<'a, EdgePayloadType, NodePayloadType>
+where
+    EdgePayloadType: Clone + Copy + PartialEq,
+    NodePayloadType: Clone + Copy + PartialEq,
+{
+    source_node_id: NodeIdType,
+    edges: &'a HashMap<EdgeIdType, EdgeType<EdgePayloadType>>,
+    nodes: &'a HashMap<NodeIdType, NodeType<NodePayloadType>>,
+
+    node_states: HashMap<NodeIdType, NodeState>,
+
+    stack: Vec<StackItemType<'a>>,
+}
+
+impl<'a, EdgePayloadType, NodePayloadType> DepthFirstIterator<'a, EdgePayloadType, NodePayloadType>
+where
+    EdgePayloadType: Clone + Copy + PartialEq,
+    NodePayloadType: Clone + Copy + PartialEq,
+{
+    pub fn new(
+        source_node_id: NodeIdType,
+        edges: &'a HashMap<EdgeIdType, EdgeType<EdgePayloadType>>,
+        nodes: &'a HashMap<NodeIdType, NodeType<NodePayloadType>>,
+    ) -> Self {
+        let node_states: HashMap<NodeIdType, NodeState> = nodes
+            .keys()
+            .map(|node_id| (*node_id, NodeState::Undiscovered))
+            .collect();
+
+        let stack_item = StackItemType {
+            origin: None,
+            targets: vec![TargetItemType {
+                via: None,
+                target: source_node_id,
+            }],
+        };
+        let stack: Vec<StackItemType> = vec![stack_item];
+
+        DepthFirstIterator {
+            source_node_id,
+            edges,
+            nodes,
+            node_states,
+            stack,
+        }
+    }
+
+    fn targets_of(&self, node: NodeIdType) -> Vec<TargetItemType<'a>> {
+        self.nodes[&node]
+            .outgoing_of()
+            .iter()
+            .map(|edge| TargetItemType {
+                via: Some(*edge),
+                target: self.edges[edge].vertices_of().1,
+            })
+            .collect()
+    }
+}
+
+impl<'a, EdgePayloadType, NodePayloadType> Iterator for DepthFirstIterator<'a, EdgePayloadType, NodePayloadType>
+where
+    EdgePayloadType: Clone + Copy + PartialEq,
+    NodePayloadType: Clone + Copy + PartialEq,
+{
+    type Item = (Option<EdgeIdType>, NodeIdType);
+
+    fn next(&mut self) -> Option<(Option<EdgeIdType>, NodeIdType)> {
+        while !self.stack.is_empty() {
+            let stack_item = self.stack.last_mut().unwrap();
+            let targets = &mut stack_item.targets;
+
+            if !targets.is_empty() {
+                let target_item = targets.remove(0);
+                let to = target_item.target;
+
+                if *(self.node_states.get(&to).unwrap()) == NodeState::Discovered {
+                    return None; // return (format!("Detected a cycle at node {:?}!", to));
+                } else if *(self.node_states.get(&to).unwrap()) == NodeState::Undiscovered {
+                    *(self.node_states.get_mut(&to).unwrap()) = NodeState::Discovered;
+                    self.stack.push(StackItemType {
+                        origin: Some(to),
+                        targets: self.targets_of(to),
+                    });
+                    Some((target_item.via.and_then(|edge_id| Some(*edge_id)), to));
+                }
+            } else if let Some(node) = self.stack.pop().unwrap().origin {
+                self.node_states.insert(node, NodeState::Finished);
+                // sorted.push(node);
+            }
+        }
+
+        None
     }
 }
 
