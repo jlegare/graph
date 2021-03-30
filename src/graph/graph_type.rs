@@ -515,7 +515,7 @@ mod tests {
 
         graph.depth_first_iter(node_ids[0]).enumerate().for_each(|(i, result)| {
             match result {
-                Ok((edge, node_id)) => assert_eq!(node_id, node_ids[i]),
+                Ok((_, node_id)) => assert_eq!(node_id, node_ids[i]),
                 Err(e) => std::panic::panic_any(e),
             };
         });
