@@ -97,7 +97,7 @@ where
         }
     }
 
-    pub fn dfs_iter(
+    pub fn depth_first_iter(
         &self,
         source_node_id: NodeIdType,
     ) -> DepthFirstIterator<EdgePayloadType, NodePayloadType> {
@@ -334,9 +334,9 @@ where
     EdgePayloadType: Clone + Copy + PartialEq,
     NodePayloadType: Clone + Copy + PartialEq,
 {
-    type Item = (Option<EdgeIdType>, NodeIdType);
+    type Item = Result<(Option<EdgeIdType>, NodeIdType), String>;
 
-    fn next(&mut self) -> Option<(Option<EdgeIdType>, NodeIdType)> {
+    fn next(&mut self) -> Option<Result<(Option<EdgeIdType>, NodeIdType), String>> {
         while !self.stack.is_empty() {
             let stack_item = self.stack.last_mut().unwrap();
             let targets = &mut stack_item.targets;
@@ -346,14 +346,14 @@ where
                 let to = target_item.target;
 
                 if *(self.node_states.get(&to).unwrap()) == NodeState::Discovered {
-                    return None; // return (format!("Detected a cycle at node {:?}!", to));
+                    return Some(Err(format!("Detected a cycle at node {:?}!", to)));
                 } else if *(self.node_states.get(&to).unwrap()) == NodeState::Undiscovered {
                     *(self.node_states.get_mut(&to).unwrap()) = NodeState::Discovered;
                     self.stack.push(StackItemType {
                         origin: Some(to),
                         targets: self.targets_of(to),
                     });
-                    Some((target_item.via.and_then(|edge_id| Some(*edge_id)), to));
+                    return Some(Ok((target_item.via.and_then(|edge_id| Some(*edge_id)), to)));
                 }
             } else if let Some(node) = self.stack.pop().unwrap().origin {
                 self.node_states.insert(node, NodeState::Finished);
@@ -492,6 +492,33 @@ mod tests {
             }
             Err(e) => std::panic::panic_any(e),
         };
+    }
+
+    #[test]
+    fn graph_type_006() {
+        let name = "GRAPH";
+        let mut graph: GraphType<(NodeIdType, NodeIdType), &str> = GraphType::new(name);
+        let payloads = vec!["FIRST", "SECOND", "THIRD", "FOURTH", "FIFTH"];
+        let node_ids = match graph.add_nodes(&payloads) {
+            Ok(node_ids) => node_ids,
+            Err(e) => std::panic::panic_any(e),
+        };
+
+        let mut edge_ids = vec![];
+        node_ids[1..].iter().fold(node_ids[0], |from, &to| {
+            match graph.add_edge(from, to, (from, to)) {
+                Ok(edge_id) => edge_ids.push(edge_id),
+                Err(e) => std::panic::panic_any(e),
+            };
+            to
+        });
+
+        graph.depth_first_iter(node_ids[0]).enumerate().for_each(|(i, result)| {
+            match result {
+                Ok((edge, node_id)) => assert_eq!(node_id, node_ids[i]),
+                Err(e) => std::panic::panic_any(e),
+            };
+        });
     }
 
     #[test]
