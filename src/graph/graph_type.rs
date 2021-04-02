@@ -699,11 +699,16 @@ mod tests {
 
         // shortest_path() needs node IDs in the reverse of depth-first ... in other words in topologically-sorted
         // order.
-        let sorted: Vec<NodeIdType> = graph.depth_first_iter(source_node_id).map(|result|
-            match result {
+        let sorted: Vec<NodeIdType> = graph
+            .depth_first_iter(source_node_id)
+            .map(|result| match result {
                 Ok((_, node_id)) => node_id,
                 Err(e) => std::panic::panic_any(e),
-            }).collect::<Vec<NodeIdType>>().into_iter().rev().collect();
+            })
+            .collect::<Vec<NodeIdType>>()
+            .into_iter()
+            .rev()
+            .collect();
 
         let (result_cost, result_edges, result_path) = graph
             .shortest_path(&sorted, &source_node_id, &target_node_id)
