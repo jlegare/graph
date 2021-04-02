@@ -329,7 +329,8 @@ where
     }
 }
 
-impl<'a, EdgePayloadType, NodePayloadType> Iterator for DepthFirstIterator<'a, EdgePayloadType, NodePayloadType>
+impl<'a, EdgePayloadType, NodePayloadType> Iterator
+    for DepthFirstIterator<'a, EdgePayloadType, NodePayloadType>
 where
     EdgePayloadType: Clone + Copy + PartialEq,
     NodePayloadType: Clone + Copy + PartialEq,
@@ -513,12 +514,15 @@ mod tests {
             to
         });
 
-        graph.depth_first_iter(node_ids[0]).enumerate().for_each(|(i, result)| {
-            match result {
-                Ok((_, node_id)) => assert_eq!(node_id, node_ids[i]),
-                Err(e) => std::panic::panic_any(e),
-            };
-        });
+        graph
+            .depth_first_iter(node_ids[0])
+            .enumerate()
+            .for_each(|(i, result)| {
+                match result {
+                    Ok((_, node_id)) => assert_eq!(node_id, node_ids[i]),
+                    Err(e) => std::panic::panic_any(e),
+                };
+            });
     }
 
     #[test]
