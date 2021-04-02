@@ -358,7 +358,6 @@ where
                 }
             } else if let Some(node) = self.stack.pop().unwrap().origin {
                 self.node_states.insert(node, NodeState::Finished);
-                // sorted.push(node);
             }
         }
 
