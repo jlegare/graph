@@ -96,7 +96,7 @@ where
         }
     }
 
-    pub fn depth_first_iter(
+    pub fn depth_first(
         &self,
         source_node_id: NodeIdType,
     ) -> DepthFirstIterator<EdgePayloadType, NodePayloadType> {
@@ -386,7 +386,7 @@ mod tests {
     }
 
     #[test]
-    fn depth_first_iter_001() {
+    fn depth_first_001() {
         let name = "GRAPH";
         let mut graph: GraphType<(NodeIdType, NodeIdType), &str> = GraphType::new(name);
         let payloads = vec!["FIRST", "SECOND", "THIRD", "FOURTH", "FIFTH"];
@@ -405,7 +405,7 @@ mod tests {
         });
 
         graph
-            .depth_first_iter(node_ids[0])
+            .depth_first(node_ids[0])
             .enumerate()
             .for_each(|(i, result)| {
                 match result {
@@ -416,7 +416,7 @@ mod tests {
     }
 
     #[test]
-    fn depth_first_iter_002() {
+    fn depth_first_002() {
         let name = "TREE";
         let mut graph: GraphType<(), u64> = GraphType::new(name);
         let payloads = vec![1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
@@ -444,7 +444,7 @@ mod tests {
             .collect();
 
         let visited: Vec<NodeIdType> = graph
-            .depth_first_iter(node_ids[0])
+            .depth_first(node_ids[0])
             .map(|result| match result {
                 Ok((_, node_id)) => node_id,
                 Err(e) => std::panic::panic_any(e),
@@ -455,7 +455,7 @@ mod tests {
     }
 
     #[test]
-    fn depth_first_iter_003() {
+    fn depth_first_003() {
         let name = "DAG";
         let mut graph: GraphType<(), i32> = GraphType::new(name);
         let payloads = vec![1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11];
@@ -485,7 +485,7 @@ mod tests {
             .collect();
 
         let visited: Vec<NodeIdType> = graph
-            .depth_first_iter(node_ids[0])
+            .depth_first(node_ids[0])
             .map(|result| match result {
                 Ok((_, node_id)) => node_id,
                 Err(e) => std::panic::panic_any(e),
@@ -496,7 +496,7 @@ mod tests {
     }
 
     #[test]
-    fn depth_first_iter_004() {
+    fn depth_first_004() {
         let name = "DAG";
         let mut graph: GraphType<(), u32> = GraphType::new(name);
 
@@ -520,7 +520,7 @@ mod tests {
         let expected = [2, 3, 4, 6, 5];
 
         let result: Vec<u32> = graph
-            .depth_first_iter(node_ids[0])
+            .depth_first(node_ids[0])
             .map(|result| match result {
                 Ok((_, node_id)) => graph.nodes[&node_id].payload_of(),
                 Err(e) => std::panic::panic_any(e),
@@ -535,7 +535,7 @@ mod tests {
         let expected = [1, 7, 4, 6, 3, 5];
 
         let result: Vec<u32> = graph
-            .depth_first_iter(node_ids[6])
+            .depth_first(node_ids[6])
             .map(|result| match result {
                 Ok((_, node_id)) => graph.nodes[&node_id].payload_of(),
                 Err(e) => std::panic::panic_any(e),
@@ -564,7 +564,7 @@ mod tests {
             .collect();
 
         graph
-            .depth_first_iter(node_ids[0])
+            .depth_first(node_ids[0])
             .for_each(|result| match result {
                 Ok((_, _)) => (),
                 Err(e) => std::panic::panic_any(e),
@@ -623,7 +623,7 @@ mod tests {
         // shortest_path() needs node IDs in the reverse of depth-first ... in other words in topologically-sorted
         // order.
         let sorted: Vec<NodeIdType> = graph
-            .depth_first_iter(source_node_id)
+            .depth_first(source_node_id)
             .map(|result| match result {
                 Ok((_, node_id)) => node_id,
                 Err(e) => std::panic::panic_any(e),
