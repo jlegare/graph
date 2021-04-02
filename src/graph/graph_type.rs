@@ -392,7 +392,7 @@ mod tests {
     use crate::graph::node_type::NodeState::Finished;
 
     #[test]
-    fn graph_type_001() {
+    fn name_001() {
         let correct_name = "CORRECT";
         let incorrect_name = "INCORRECT";
         let graph = GraphType::<(), ()>::new(correct_name);
@@ -402,7 +402,7 @@ mod tests {
     }
 
     #[test]
-    fn graph_type_002() {
+    fn add_node_001() {
         let name = "GRAPH";
         let mut graph: GraphType<(), &str> = GraphType::new(name);
         let payloads = vec!["FIRST", "SECOND", "THIRD"];
@@ -418,7 +418,7 @@ mod tests {
     }
 
     #[test]
-    fn graph_type_003() {
+    fn add_nodes_001() {
         let name = "GRAPH";
         let mut graph: GraphType<(), &str> = GraphType::new(name);
         let payloads = vec!["FIRST", "SECOND", "THIRD"];
@@ -434,7 +434,7 @@ mod tests {
     }
 
     #[test]
-    fn graph_type_004() {
+    fn add_edge_001() {
         let name = "GRAPH";
         let mut graph: GraphType<(NodeIdType, NodeIdType), &str> = GraphType::new(name);
         let payloads = vec!["FIRST", "SECOND", "THIRD", "FOURTH", "FIFTH"];
@@ -463,39 +463,7 @@ mod tests {
     }
 
     #[test]
-    fn graph_type_005() {
-        let name = "GRAPH";
-        let mut graph: GraphType<(NodeIdType, NodeIdType), &str> = GraphType::new(name);
-        let payloads = vec!["FIRST", "SECOND", "THIRD", "FOURTH", "FIFTH"];
-        let node_ids = match graph.add_nodes(&payloads) {
-            Ok(node_ids) => node_ids,
-            Err(e) => std::panic::panic_any(e),
-        };
-
-        let mut edge_ids = vec![];
-        node_ids[1..].iter().fold(node_ids[0], |from, &to| {
-            match graph.add_edge(from, to, (from, to)) {
-                Ok(edge_id) => edge_ids.push(edge_id),
-                Err(e) => std::panic::panic_any(e),
-            };
-            to
-        });
-
-        match graph.depth_first(node_ids[0]) {
-            Ok((sorted, _)) => {
-                assert_eq!(sorted.len(), node_ids.len());
-                node_ids
-                    .iter()
-                    .rev()
-                    .zip(sorted.iter())
-                    .for_each(|(left, right)| assert_eq!(left, right));
-            }
-            Err(e) => std::panic::panic_any(e),
-        };
-    }
-
-    #[test]
-    fn graph_type_006() {
+    fn depth_first_iter_001() {
         let name = "GRAPH";
         let mut graph: GraphType<(NodeIdType, NodeIdType), &str> = GraphType::new(name);
         let payloads = vec!["FIRST", "SECOND", "THIRD", "FOURTH", "FIFTH"];
@@ -525,36 +493,7 @@ mod tests {
     }
 
     #[test]
-    fn graph_type_dfs_callback_01() {
-        let name = "CALLBACK";
-        let mut graph: GraphType<(), u32> = GraphType::new(name);
-        let payloads = vec![1, 2, 3, 4, 5, 6, 7];
-        let node_ids = graph.add_nodes(&payloads).unwrap();
-
-        let edges_by_payload = [(1, 2), (1, 3), (2, 4), (2, 5), (3, 6), (3, 7)];
-        let _edges: Vec<EdgeIdType> = edges_by_payload
-            .iter()
-            .map(|(from, to)| graph.add_edge_by_payload(*from, *to, ()).unwrap())
-            .collect();
-
-        let expected = [1, 2, 4, 5, 3, 6, 7];
-        let mut result = Vec::<u32>::new();
-
-        graph
-            .depth_first_for_each(node_ids[0], |_, node_id| {
-                let node = &graph.nodes[node_id];
-                result.push(node.payload_of() * 2);
-            })
-            .unwrap();
-
-        expected
-            .iter()
-            .zip(result)
-            .for_each(|(left, right)| assert_eq!(*left * 2, right));
-    }
-
-    #[test]
-    fn graph_type_dfs_tree() {
+    fn depth_first_iter_002() {
         let name = "TREE";
         let mut graph: GraphType<(), u64> = GraphType::new(name);
         let payloads = vec![1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
@@ -580,23 +519,20 @@ mod tests {
             .iter()
             .map(|&id| NodeIdType::new(id as usize))
             .collect();
-        let mut visited = vec![];
 
-        let (_, states) = graph
-            .depth_first_for_each(node_ids[0], |_, node| {
-                visited.push(*node);
+        let visited: Vec<NodeIdType> = graph
+            .depth_first_iter(node_ids[0])
+            .map(|result| match result {
+                Ok((_, node_id)) => node_id,
+                Err(e) => std::panic::panic_any(e),
             })
-            .unwrap();
+            .collect();
 
         assert_eq!(lexicographical, visited);
-
-        node_ids
-            .iter()
-            .for_each(|node_id| assert_eq!(states[node_id], Finished));
     }
 
     #[test]
-    fn graph_type_dfs_dag_01() {
+    fn depth_first_iter_003() {
         let name = "DAG";
         let mut graph: GraphType<(), i32> = GraphType::new(name);
         let payloads = vec![1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11];
@@ -624,23 +560,20 @@ mod tests {
             .iter()
             .map(|id| NodeIdType::new(*id as usize))
             .collect();
-        let mut visited = vec![];
 
-        let (_, states) = graph
-            .depth_first_for_each(node_ids[0], |_, node| {
-                visited.push(*node);
+        let visited: Vec<NodeIdType> = graph
+            .depth_first_iter(node_ids[0])
+            .map(|result| match result {
+                Ok((_, node_id)) => node_id,
+                Err(e) => std::panic::panic_any(e),
             })
-            .unwrap();
+            .collect();
 
         assert_eq!(lexicographical, visited);
-
-        node_ids
-            .iter()
-            .for_each(|node_id| assert_eq!(states[node_id], Finished));
     }
 
     #[test]
-    fn graph_type_dfs_dag_02() {
+    fn depth_first_iter_004() {
         let name = "DAG";
         let mut graph: GraphType<(), u32> = GraphType::new(name);
 
@@ -662,34 +595,39 @@ mod tests {
             .map(|(from, to)| graph.add_edge_by_payload(*from, *to, ()).unwrap())
             .collect();
         let expected = [2, 3, 4, 6, 5];
-        let mut result = vec![];
 
-        graph
-            .depth_first_for_each(node_ids[0], |_, node| {
-                result.push(graph.nodes[node].payload_of());
+        let result: Vec<u32> = graph
+            .depth_first_iter(node_ids[0])
+            .map(|result| match result {
+                Ok((_, node_id)) => graph.nodes[&node_id].payload_of(),
+                Err(e) => std::panic::panic_any(e),
             })
-            .unwrap();
-        result
+            .collect();
+
+        expected
             .iter()
-            .zip(expected.iter())
-            .for_each(|(left, right)| assert_eq!(left, right));
+            .zip(result)
+            .for_each(|(left, right)| assert_eq!(left, &right));
 
         let expected = [1, 7, 4, 6, 3, 5];
-        result.clear();
-        graph
-            .depth_first_for_each(node_ids[6], |_, node| {
-                result.push(graph.nodes[node].payload_of());
+
+        let result: Vec<u32> = graph
+            .depth_first_iter(node_ids[6])
+            .map(|result| match result {
+                Ok((_, node_id)) => graph.nodes[&node_id].payload_of(),
+                Err(e) => std::panic::panic_any(e),
             })
-            .unwrap();
-        result
+            .collect();
+
+        expected
             .iter()
-            .zip(expected.iter())
-            .for_each(|(left, right)| assert_eq!(left, right));
+            .zip(result)
+            .for_each(|(left, right)| assert_eq!(left, &right));
     }
 
     #[test]
     #[should_panic]
-    fn graph_type_def_cycle_detection_01() {
+    fn depth_first_cycle_001() {
         let name = "CYCLE DETECTION";
         let mut graph: GraphType<(), u32> = GraphType::new(name);
 
@@ -702,18 +640,16 @@ mod tests {
             .map(|(from, to)| graph.add_edge_by_payload(*from, *to, ()).unwrap())
             .collect();
 
-        let mut result = vec![];
-
-        match graph.depth_first_for_each(node_ids[0], |_, node| {
-            result.push(graph.nodes[node].payload_of());
-        }) {
-            Ok(_) => (),
-            Err(e) => std::panic::panic_any(e),
-        };
+        graph
+            .depth_first_iter(node_ids[0])
+            .for_each(|result| match result {
+                Ok((_, _)) => (),
+                Err(e) => std::panic::panic_any(e),
+            });
     }
 
     #[test]
-    fn graph_type_shortest_path_02() {
+    fn shortest_path_01() {
         let name = "SHORTEST PATH";
         let mut graph: GraphType<u32, u32> = GraphType::new(name);
         let node_payloads = vec![1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11];
