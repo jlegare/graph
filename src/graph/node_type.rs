@@ -49,16 +49,14 @@ where
     }
 
     pub(super) fn add_incoming(&mut self, edge_id: EdgeIdType) {
-        match self.incoming.iter().find(|&id| *id == edge_id) {
-            None => self.incoming.push(edge_id),
-            _ => {}
+        if self.incoming.iter().find(|&id| *id == edge_id) == None {
+            self.incoming.push(edge_id)
         }
     }
 
     pub(super) fn add_outgoing(&mut self, edge_id: EdgeIdType) {
-        match self.outgoing.iter().find(|&id| *id == edge_id) {
-            None => self.outgoing.push(edge_id),
-            _ => {}
+        if self.outgoing.iter().find(|&id| *id == edge_id) == None {
+            self.outgoing.push(edge_id)
         }
     }
 

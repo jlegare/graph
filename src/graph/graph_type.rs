@@ -89,8 +89,7 @@ where
         match self
             .nodes
             .values()
-            .filter(|node| node.payload_of() == payload)
-            .next()
+            .find(|node| node.payload_of() == payload)
         {
             Some(node) => Ok(node.id_of()),
             None => Err("The node could not be located by payload.".to_string()), // This should really refer to the payload.
@@ -106,10 +105,10 @@ where
 
     pub fn shortest_path(
         &mut self,
-        sorted: &Vec<NodeIdType>,
+        sorted: &[NodeIdType],
         source_node_id: &NodeIdType,
         target_node_id: &NodeIdType,
-    ) -> Result<(f64, Vec<Option<EdgeIdType>>, Vec<NodeIdType>), String> {
+    ) -> Result<(f64, EdgeIdsType, NodeIdsType), String> {
         //
         // WIP: ADD CYCLE DETECTION!
         //
@@ -179,7 +178,7 @@ where
         Ok((
             costs[target_node_id],
             path.iter().map(|i| edges[i]).rev().collect(),
-            path.iter().map(|i| *i).rev().collect(),
+            path.into_iter().rev().collect(),
         ))
     }
 }
@@ -272,7 +271,7 @@ where
                         origin: Some(to),
                         targets: self.targets_of(to),
                     });
-                    return Some(Ok((target_item.via.and_then(|edge_id| Some(*edge_id)), to)));
+                    return Some(Ok((target_item.via.copied(), to)));
                 }
             } else if let Some(node) = self.stack.pop().unwrap().origin {
                 self.node_states.insert(node, NodeState::Finished);
@@ -300,6 +299,12 @@ struct TargetItemType<'a> {
     via: Option<&'a EdgeIdType>,
     target: NodeIdType,
 }
+
+/* ------------------------------------------------------------------------
+ * CONVENIENCE TYPES
+ */
+type EdgeIdsType = Vec<Option<EdgeIdType>>;
+type NodeIdsType = Vec<NodeIdType>;
 
 /* ------------------------------------------------------------------------
  * UNIT TESTS
