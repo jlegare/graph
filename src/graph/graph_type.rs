@@ -283,7 +283,7 @@ where
 }
 
 /* ------------------------------------------------------------------------
- * STACK ITEM TYPE ... This is a helper struct used in dfs(), to (hopefully) clarify the code.
+ * STACK ITEM TYPE ... This is a helper struct used in depth_first(), to (hopefully) clarify the code.
  */
 #[derive(Debug)]
 struct StackItemType<'a> {
@@ -292,7 +292,7 @@ struct StackItemType<'a> {
 }
 
 /* ------------------------------------------------------------------------
- * TARGET ITEM TYPE ... This is a helper struct used in dfs(), to (hopefully) clarify the code.
+ * TARGET ITEM TYPE ... This is a helper struct used in depth_first(), to (hopefully) clarify the code.
  */
 #[derive(Debug)]
 struct TargetItemType<'a> {
