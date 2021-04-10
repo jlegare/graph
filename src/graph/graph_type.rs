@@ -438,7 +438,9 @@ mod tests {
     fn depth_first_003() {
         let name = "DAG";
         let mut graph: GraphType<(), ()> = GraphType::new(name);
-        let node_ids = (1..=11).map(|_| graph.add_node(()).unwrap()).collect::<Vec<NodeIdType>>();
+        let node_ids = (1..=11)
+            .map(|_| graph.add_node(()).unwrap())
+            .collect::<Vec<NodeIdType>>();
 
         graph.add_edge(node_ids[0], node_ids[1], ()).unwrap();
         graph.add_edge(node_ids[0], node_ids[4], ()).unwrap();
@@ -579,7 +581,9 @@ mod tests {
         let _edge_ids: Vec<EdgeIdType> = edges_by_id
             .iter()
             .map(|(from, to, payload, weight)| {
-                let edge_id = graph.add_edge(node_ids[*from], node_ids[*to], *payload).unwrap();
+                let edge_id = graph
+                    .add_edge(node_ids[*from], node_ids[*to], *payload)
+                    .unwrap();
                 graph
                     .edges
                     .get_mut(&edge_id)
@@ -593,7 +597,13 @@ mod tests {
         let source_node_id = node_ids[0];
         let target_node_id = node_ids[10];
 
-        let expected_path = vec![node_ids[0], node_ids[1], node_ids[2], node_ids[3], node_ids[10]];
+        let expected_path = vec![
+            node_ids[0],
+            node_ids[1],
+            node_ids[2],
+            node_ids[3],
+            node_ids[10],
+        ];
         let expected_cost = 9.0;
 
         // shortest_path() needs node IDs in the reverse of depth-first ... in other words in topologically-sorted
