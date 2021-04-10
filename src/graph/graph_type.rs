@@ -89,9 +89,7 @@ where
         source_node_id: &NodeIdType,
         target_node_id: &NodeIdType,
     ) -> Result<(f64, EdgeIdsType, NodeIdsType), String> {
-        //
-        // WIP: ADD CYCLE DETECTION!
-        //
+        // This implementation assumes that the nodes have been topologically-sorted ... i.e., run through depth_first().
         type ChildrensType = HashMap<NodeIdType, HashMap<NodeIdType, EdgeIdType>>;
         type CostsType = HashMap<NodeIdType, f64>;
         type EdgesType = HashMap<NodeIdType, Option<EdgeIdType>>;

@@ -73,7 +73,7 @@ where
     EdgePayloadType: Clone + Copy + Eq,
 {
     fn eq(&self, other: &Self) -> bool {
-        self.from == other.from && self.to == other.to && self.payload == other.payload
+        self.from == other.from && self.to == other.to
     }
 }
 

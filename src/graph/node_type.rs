@@ -78,7 +78,7 @@ where
     NodePayloadType: Clone + Copy + Eq,
 {
     fn eq(&self, other: &Self) -> bool {
-        self.id == other.id && self.payload == other.payload
+        self.id == other.id
     }
 }
 
