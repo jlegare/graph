@@ -50,15 +50,6 @@ where
         }
     }
 
-    pub fn add_edge_by_payload(
-        &mut self,
-        from: NodePayloadType,
-        to: NodePayloadType,
-        payload: EdgePayloadType,
-    ) -> Result<EdgeIdType, String> {
-        self.add_edge(self.locate_node(from)?, self.locate_node(to)?, payload)
-    }
-
     pub fn add_node(&mut self, payload: NodePayloadType) -> Result<NodeIdType, String> {
         let node = NodeType::new(self.nodes.len() + 1, payload); // The "+ 1" is to make IDs start at 1.
         let id = node.id_of();
@@ -83,17 +74,6 @@ where
         // It was the caller's responsibility to check that to is present in self.nodes. So we can go ahead and unwrap()
         // without further ado.
         self.nodes.get_mut(&from).unwrap().add_outgoing(edge)
-    }
-
-    fn locate_node(&self, payload: NodePayloadType) -> Result<NodeIdType, String> {
-        match self
-            .nodes
-            .values()
-            .find(|node| node.payload_of() == payload)
-        {
-            Some(node) => Ok(node.id_of()),
-            None => Err("The node could not be located by payload.".to_string()), // This should really refer to the payload.
-        }
     }
 
     pub fn depth_first(
@@ -422,20 +402,20 @@ mod tests {
         let payloads = vec![1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
         let node_ids = graph.add_nodes(&payloads).unwrap();
 
-        let edges_by_payload = [
+        let edges_by_id = [
+            (0, 1),
+            (0, 4),
+            (0, 8),
             (1, 2),
-            (1, 5),
-            (1, 9),
+            (4, 5),
+            (4, 7),
+            (8, 9),
             (2, 3),
             (5, 6),
-            (5, 8),
-            (9, 10),
-            (3, 4),
-            (6, 7),
         ];
-        let _edges: Vec<EdgeIdType> = edges_by_payload
+        let _edges: Vec<EdgeIdType> = edges_by_id
             .iter()
-            .map(|(from, to)| graph.add_edge_by_payload(*from, *to, ()).unwrap())
+            .map(|(from, to)| graph.add_edge(node_ids[*from], node_ids[*to], ()).unwrap())
             .collect();
 
         let lexicographical: Vec<NodeIdType> = payloads
@@ -457,27 +437,26 @@ mod tests {
     #[test]
     fn depth_first_003() {
         let name = "DAG";
-        let mut graph: GraphType<(), i32> = GraphType::new(name);
-        let payloads = vec![1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11];
-        let node_ids = graph.add_nodes(&payloads).unwrap();
+        let mut graph: GraphType<(), ()> = GraphType::new(name);
+        let node_ids = (1..=11).map(|_| graph.add_node(()).unwrap()).collect::<Vec<NodeIdType>>();
 
-        graph.add_edge_by_payload(1, 2, ()).unwrap();
-        graph.add_edge_by_payload(1, 5, ()).unwrap();
-        graph.add_edge_by_payload(1, 9, ()).unwrap();
+        graph.add_edge(node_ids[0], node_ids[1], ()).unwrap();
+        graph.add_edge(node_ids[0], node_ids[4], ()).unwrap();
+        graph.add_edge(node_ids[0], node_ids[8], ()).unwrap();
 
-        graph.add_edge_by_payload(2, 3, ()).unwrap();
+        graph.add_edge(node_ids[1], node_ids[2], ()).unwrap();
 
-        graph.add_edge_by_payload(5, 6, ()).unwrap();
-        graph.add_edge_by_payload(5, 8, ()).unwrap();
+        graph.add_edge(node_ids[4], node_ids[5], ()).unwrap();
+        graph.add_edge(node_ids[4], node_ids[7], ()).unwrap();
 
-        graph.add_edge_by_payload(9, 10, ()).unwrap();
-        graph.add_edge_by_payload(3, 4, ()).unwrap();
-        graph.add_edge_by_payload(6, 7, ()).unwrap();
+        graph.add_edge(node_ids[8], node_ids[9], ()).unwrap();
+        graph.add_edge(node_ids[2], node_ids[3], ()).unwrap();
+        graph.add_edge(node_ids[5], node_ids[6], ()).unwrap();
 
-        graph.add_edge_by_payload(4, 11, ()).unwrap();
-        graph.add_edge_by_payload(7, 11, ()).unwrap();
-        graph.add_edge_by_payload(8, 11, ()).unwrap();
-        graph.add_edge_by_payload(10, 11, ()).unwrap();
+        graph.add_edge(node_ids[3], node_ids[10], ()).unwrap();
+        graph.add_edge(node_ids[6], node_ids[10], ()).unwrap();
+        graph.add_edge(node_ids[7], node_ids[10], ()).unwrap();
+        graph.add_edge(node_ids[9], node_ids[10], ()).unwrap();
 
         let lexicographical: Vec<NodeIdType> = [1, 2, 3, 4, 11, 5, 6, 7, 8, 9, 10]
             .iter()
@@ -503,19 +482,19 @@ mod tests {
         let node_payloads = vec![2, 3, 4, 5, 6, 7, 1];
         let node_ids = graph.add_nodes(&node_payloads).unwrap();
 
-        let edges_by_payload = [
-            (2, 3),
-            (2, 6),
-            (3, 4),
-            (6, 3),
-            (7, 4),
-            (1, 7),
-            (7, 6),
+        let edges = [
+            (0, 1),
+            (0, 4),
+            (1, 2),
+            (4, 1),
+            (5, 2),
             (6, 5),
+            (5, 4),
+            (4, 3),
         ];
-        let _edges: Vec<EdgeIdType> = edges_by_payload
+        let _edges: Vec<EdgeIdType> = edges
             .iter()
-            .map(|(from, to)| graph.add_edge_by_payload(*from, *to, ()).unwrap())
+            .map(|(from, to)| graph.add_edge(node_ids[*from], node_ids[*to], ()).unwrap())
             .collect();
         let expected = [2, 3, 4, 6, 5];
 
@@ -557,10 +536,10 @@ mod tests {
         let node_payloads = vec![2, 3, 6];
         let node_ids = graph.add_nodes(&node_payloads).unwrap();
 
-        let edges_by_payload = vec![(2, 3), (3, 6), (6, 2)];
-        let _edges: Vec<EdgeIdType> = edges_by_payload
+        let edges = vec![(0, 1), (1, 2), (2, 0)];
+        let _edges: Vec<EdgeIdType> = edges
             .iter()
-            .map(|(from, to)| graph.add_edge_by_payload(*from, *to, ()).unwrap())
+            .map(|(from, to)| graph.add_edge(node_ids[*from], node_ids[*to], ()).unwrap())
             .collect();
 
         graph
@@ -576,31 +555,31 @@ mod tests {
         let name = "SHORTEST PATH";
         let mut graph: GraphType<u32, u32> = GraphType::new(name);
         let node_payloads = vec![1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11];
-        let _node_ids = match graph.add_nodes(&node_payloads) {
+        let node_ids = match graph.add_nodes(&node_payloads) {
             Ok(node_ids) => node_ids,
             Err(e) => std::panic::panic_any(e),
         };
 
-        let edges_by_payload = vec![
-            (1, 2, 1, 1),
-            (1, 5, 2, 2),
-            (1, 9, 5, 5),
-            (2, 3, 6, 6),
-            (5, 6, 3, 3),
-            (5, 8, 4, 4),
-            (9, 10, 7, 7),
-            (3, 4, 1, 1),
-            (6, 7, 2, 2),
-            (4, 11, 1, 1),
-            (7, 11, 3, 3),
-            (8, 11, 5, 5),
-            (10, 11, 3, 3),
+        let edges_by_id = vec![
+            (0, 1, 1, 1),
+            (0, 4, 2, 2),
+            (0, 8, 5, 5),
+            (1, 2, 6, 6),
+            (4, 5, 3, 3),
+            (4, 7, 4, 4),
+            (8, 9, 7, 7),
+            (2, 3, 1, 1),
+            (5, 6, 2, 2),
+            (3, 10, 1, 1),
+            (6, 10, 3, 3),
+            (7, 10, 5, 5),
+            (9, 10, 3, 3),
         ];
 
-        let _edge_ids: Vec<EdgeIdType> = edges_by_payload
+        let _edge_ids: Vec<EdgeIdType> = edges_by_id
             .iter()
             .map(|(from, to, payload, weight)| {
-                let edge_id = graph.add_edge_by_payload(*from, *to, *payload).unwrap();
+                let edge_id = graph.add_edge(node_ids[*from], node_ids[*to], *payload).unwrap();
                 graph
                     .edges
                     .get_mut(&edge_id)
@@ -611,13 +590,10 @@ mod tests {
             })
             .collect();
 
-        let source_node_id = graph.locate_node(1).unwrap();
-        let target_node_id = graph.locate_node(11).unwrap();
+        let source_node_id = node_ids[0];
+        let target_node_id = node_ids[10];
 
-        let expected_path: Vec<NodeIdType> = vec![1, 2, 3, 4, 11]
-            .iter()
-            .map(|payload| graph.locate_node(*payload).unwrap())
-            .collect();
+        let expected_path = vec![node_ids[0], node_ids[1], node_ids[2], node_ids[3], node_ids[10]];
         let expected_cost = 9.0;
 
         // shortest_path() needs node IDs in the reverse of depth-first ... in other words in topologically-sorted
