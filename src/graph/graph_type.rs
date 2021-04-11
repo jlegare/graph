@@ -9,8 +9,8 @@ use crate::graph::node_type::{NodeIdType, NodeState, NodeType};
 #[derive(Debug)]
 pub struct GraphType<EdgePayloadType, NodePayloadType>
 where
-    EdgePayloadType: Clone + Copy + PartialEq,
-    NodePayloadType: Clone + Copy + PartialEq,
+    EdgePayloadType: Copy + PartialEq,
+    NodePayloadType: Copy + PartialEq,
 {
     name: String,
     edges: HashMap<EdgeIdType, EdgeType<EdgePayloadType>>,
@@ -19,8 +19,8 @@ where
 
 impl<EdgePayloadType, NodePayloadType> GraphType<EdgePayloadType, NodePayloadType>
 where
-    EdgePayloadType: Clone + Copy + PartialEq,
-    NodePayloadType: Clone + Copy + PartialEq,
+    EdgePayloadType: Copy + PartialEq,
+    NodePayloadType: Copy + PartialEq,
 {
     pub fn new(name: &str) -> Self {
         GraphType {
@@ -167,8 +167,8 @@ where
 #[derive(Debug)]
 pub struct DepthFirstIterator<'a, EdgePayloadType, NodePayloadType>
 where
-    EdgePayloadType: Clone + Copy + PartialEq,
-    NodePayloadType: Clone + Copy + PartialEq,
+    EdgePayloadType: Copy + PartialEq,
+    NodePayloadType: Copy + PartialEq,
 {
     source_node_id: NodeIdType,
     edges: &'a HashMap<EdgeIdType, EdgeType<EdgePayloadType>>,
@@ -181,8 +181,8 @@ where
 
 impl<'a, EdgePayloadType, NodePayloadType> DepthFirstIterator<'a, EdgePayloadType, NodePayloadType>
 where
-    EdgePayloadType: Clone + Copy + PartialEq,
-    NodePayloadType: Clone + Copy + PartialEq,
+    EdgePayloadType: Copy + PartialEq,
+    NodePayloadType: Copy + PartialEq,
 {
     pub fn new(
         source_node_id: NodeIdType,
@@ -227,8 +227,8 @@ where
 impl<'a, EdgePayloadType, NodePayloadType> Iterator
     for DepthFirstIterator<'a, EdgePayloadType, NodePayloadType>
 where
-    EdgePayloadType: Clone + Copy + PartialEq,
-    NodePayloadType: Clone + Copy + PartialEq,
+    EdgePayloadType: Copy + PartialEq,
+    NodePayloadType: Copy + PartialEq,
 {
     type Item = Result<(Option<EdgeIdType>, NodeIdType), String>;
 

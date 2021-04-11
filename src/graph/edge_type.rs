@@ -11,11 +11,8 @@ pub struct EdgeIdType {
 /* ------------------------------------------------------------------------
  * EDGE TYPE
  */
-#[derive(Clone, Debug)]
-pub struct EdgeType<EdgePayloadType: Clone + Copy>
-where
-    EdgePayloadType: Clone + Copy,
-{
+#[derive(Debug)]
+pub struct EdgeType<EdgePayloadType> {
     id: EdgeIdType,
     from: NodeIdType,
     to: NodeIdType,
@@ -24,10 +21,7 @@ where
     weight: f64,
 }
 
-impl<EdgePayloadType> EdgeType<EdgePayloadType>
-where
-    EdgePayloadType: Clone + Copy,
-{
+impl<EdgePayloadType: Copy> EdgeType<EdgePayloadType> {
     pub(super) fn new(
         id: usize,
         from: NodeIdType,
@@ -68,16 +62,13 @@ where
     }
 }
 
-impl<EdgePayloadType> PartialEq for EdgeType<EdgePayloadType>
-where
-    EdgePayloadType: Clone + Copy + Eq,
-{
+impl<EdgePayloadType: Eq> PartialEq for EdgeType<EdgePayloadType> {
     fn eq(&self, other: &Self) -> bool {
         self.from == other.from && self.to == other.to
     }
 }
 
-impl<EdgePayloadType> Eq for EdgeType<EdgePayloadType> where EdgePayloadType: Clone + Copy + Eq {}
+impl<EdgePayloadType: Eq> Eq for EdgeType<EdgePayloadType> {}
 
 /* ------------------------------------------------------------------------
  * UNIT TESTS

@@ -20,21 +20,15 @@ impl NodeIdType {
 /* ------------------------------------------------------------------------
  * NODE TYPE
  */
-#[derive(Clone, Debug)]
-pub struct NodeType<NodePayloadType: Clone + Copy>
-where
-    NodePayloadType: Clone + Copy,
-{
+#[derive(Debug)]
+pub struct NodeType<NodePayloadType> {
     id: NodeIdType,
     incoming: Vec<EdgeIdType>,
     outgoing: Vec<EdgeIdType>,
     payload: NodePayloadType,
 }
 
-impl<NodePayloadType> NodeType<NodePayloadType>
-where
-    NodePayloadType: Clone + Copy,
-{
+impl<NodePayloadType: Copy> NodeType<NodePayloadType> {
     pub(super) fn new(id: usize, payload: NodePayloadType) -> Self {
         Self {
             id: NodeIdType { id },
@@ -73,21 +67,18 @@ where
     }
 }
 
-impl<NodePayloadType> PartialEq for NodeType<NodePayloadType>
-where
-    NodePayloadType: Clone + Copy + Eq,
-{
+impl<NodePayloadType: Eq> PartialEq for NodeType<NodePayloadType> {
     fn eq(&self, other: &Self) -> bool {
         self.id == other.id
     }
 }
 
-impl<NodePayloadType> Eq for NodeType<NodePayloadType> where NodePayloadType: Clone + Copy + Eq {}
+impl<NodePayloadType: Eq> Eq for NodeType<NodePayloadType> {}
 
 /* ------------------------------------------------------------------------
  * NODE STATE
  */
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Debug, PartialEq)]
 pub enum NodeState {
     Undiscovered,
     Discovered,
