@@ -76,11 +76,15 @@ where
         self.nodes.get_mut(&from).unwrap().add_outgoing(edge)
     }
 
-    pub fn depth_first(
+    pub fn depth_first<CallBackType>(
         &self,
         source_node_id: NodeIdType,
-    ) -> DepthFirstIterator<EdgePayloadType, NodePayloadType> {
-        DepthFirstIterator::new(source_node_id, &self.edges, &self.nodes)
+        finished: CallBackType,
+    ) -> DepthFirstIterator<EdgePayloadType, NodePayloadType, CallBackType>
+    where
+        CallBackType: FnMut(&NodeType<NodePayloadType>) -> (),
+    {
+        DepthFirstIterator::new(source_node_id, &self.edges, &self.nodes, finished)
     }
 
     pub fn shortest_path(
@@ -165,30 +169,39 @@ where
  * DEPTH FIRST ITERATOR
  */
 #[derive(Debug)]
-pub struct DepthFirstIterator<'a, EdgePayloadType, NodePayloadType>
+pub struct DepthFirstIterator<'a, EdgePayloadType, NodePayloadType, CallBackType>
 where
     EdgePayloadType: Copy + PartialEq,
     NodePayloadType: Copy + PartialEq,
+    CallBackType: FnMut(&NodeType<NodePayloadType>) -> (),
 {
     source_node_id: NodeIdType,
     edges: &'a HashMap<EdgeIdType, EdgeType<EdgePayloadType>>,
     nodes: &'a HashMap<NodeIdType, NodeType<NodePayloadType>>,
+
+    finished: CallBackType,
 
     node_states: HashMap<NodeIdType, NodeState>,
 
     stack: Vec<StackItemType<'a>>,
 }
 
-impl<'a, EdgePayloadType, NodePayloadType> DepthFirstIterator<'a, EdgePayloadType, NodePayloadType>
+impl<'a, EdgePayloadType, NodePayloadType, CallBackType>
+    DepthFirstIterator<'a, EdgePayloadType, NodePayloadType, CallBackType>
 where
     EdgePayloadType: Copy + PartialEq,
     NodePayloadType: Copy + PartialEq,
+    CallBackType: FnMut(&NodeType<NodePayloadType>) -> (),
 {
     pub fn new(
         source_node_id: NodeIdType,
         edges: &'a HashMap<EdgeIdType, EdgeType<EdgePayloadType>>,
         nodes: &'a HashMap<NodeIdType, NodeType<NodePayloadType>>,
-    ) -> Self {
+        finished: CallBackType,
+    ) -> Self
+    where
+        CallBackType: FnMut(&NodeType<NodePayloadType>) -> (),
+    {
         let node_states: HashMap<NodeIdType, NodeState> = nodes
             .keys()
             .map(|node_id| (*node_id, NodeState::Undiscovered))
@@ -207,6 +220,7 @@ where
             source_node_id,
             edges,
             nodes,
+            finished,
             node_states,
             stack,
         }
@@ -224,11 +238,12 @@ where
     }
 }
 
-impl<'a, EdgePayloadType, NodePayloadType> Iterator
-    for DepthFirstIterator<'a, EdgePayloadType, NodePayloadType>
+impl<'a, EdgePayloadType, NodePayloadType, CallBackType> Iterator
+    for DepthFirstIterator<'a, EdgePayloadType, NodePayloadType, CallBackType>
 where
     EdgePayloadType: Copy + PartialEq,
     NodePayloadType: Copy + PartialEq,
+    CallBackType: FnMut(&NodeType<NodePayloadType>) -> (),
 {
     type Item = Result<(Option<EdgeIdType>, NodeIdType), String>;
 
@@ -252,6 +267,7 @@ where
                     return Some(Ok((target_item.via.copied(), to)));
                 }
             } else if let Some(node) = self.stack.pop().unwrap().origin {
+                (self.finished)(&self.nodes.get(&node).unwrap());
                 self.node_states.insert(node, NodeState::Finished);
             }
         }
@@ -383,7 +399,7 @@ mod tests {
         });
 
         graph
-            .depth_first(node_ids[0])
+            .depth_first(node_ids[0], |_| {})
             .enumerate()
             .for_each(|(i, result)| {
                 match result {
@@ -422,7 +438,7 @@ mod tests {
             .collect();
 
         let visited: Vec<NodeIdType> = graph
-            .depth_first(node_ids[0])
+            .depth_first(node_ids[0], |_| {})
             .map(|result| match result {
                 Ok((_, node_id)) => node_id,
                 Err(e) => std::panic::panic_any(e),
@@ -458,20 +474,28 @@ mod tests {
         graph.add_edge(node_ids[7], node_ids[10], ()).unwrap();
         graph.add_edge(node_ids[9], node_ids[10], ()).unwrap();
 
-        let lexicographical: Vec<NodeIdType> = [1, 2, 3, 4, 11, 5, 6, 7, 8, 9, 10]
+        let visited_expected: Vec<NodeIdType> = [1, 2, 3, 4, 11, 5, 6, 7, 8, 9, 10]
             .iter()
             .map(|id| NodeIdType::new(*id as usize))
             .collect();
 
-        let visited: Vec<NodeIdType> = graph
-            .depth_first(node_ids[0])
+        let topological_expected: Vec<NodeIdType> = [11, 4, 3, 2, 7, 6, 8, 5, 10, 9, 1]
+            .iter()
+            .map(|id| NodeIdType::new(*id as usize))
+            .collect();
+
+        let mut topological_result: Vec<NodeIdType> = vec![];
+
+        let visited_result: Vec<NodeIdType> = graph
+            .depth_first(node_ids[0], |node| topological_result.push(node.id_of()))
             .map(|result| match result {
                 Ok((_, node_id)) => node_id,
                 Err(e) => std::panic::panic_any(e),
             })
             .collect();
 
-        assert_eq!(lexicographical, visited);
+        assert_eq!(topological_expected, topological_result);
+        assert_eq!(visited_expected, visited_result);
     }
 
     #[test]
@@ -499,7 +523,7 @@ mod tests {
         let expected = [2, 3, 4, 6, 5];
 
         let result: Vec<u32> = graph
-            .depth_first(node_ids[0])
+            .depth_first(node_ids[0], |_| {})
             .map(|result| match result {
                 Ok((_, node_id)) => graph.nodes[&node_id].payload_of(),
                 Err(e) => std::panic::panic_any(e),
@@ -514,7 +538,7 @@ mod tests {
         let expected = [1, 7, 4, 6, 3, 5];
 
         let result: Vec<u32> = graph
-            .depth_first(node_ids[6])
+            .depth_first(node_ids[6], |_| {})
             .map(|result| match result {
                 Ok((_, node_id)) => graph.nodes[&node_id].payload_of(),
                 Err(e) => std::panic::panic_any(e),
@@ -543,7 +567,7 @@ mod tests {
             .collect();
 
         graph
-            .depth_first(node_ids[0])
+            .depth_first(node_ids[0], |_| {})
             .for_each(|result| match result {
                 Ok((_, _)) => (),
                 Err(e) => std::panic::panic_any(e),
@@ -607,7 +631,7 @@ mod tests {
         // shortest_path() needs node IDs in the reverse of depth-first ... in other words in topologically-sorted
         // order.
         let sorted: Vec<NodeIdType> = graph
-            .depth_first(source_node_id)
+            .depth_first(source_node_id, |_| {})
             .map(|result| match result {
                 Ok((_, node_id)) => node_id,
                 Err(e) => std::panic::panic_any(e),
