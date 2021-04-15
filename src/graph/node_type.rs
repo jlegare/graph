@@ -67,14 +67,6 @@ impl<NodePayloadType: Copy> NodeType<NodePayloadType> {
     }
 }
 
-impl<NodePayloadType: Eq> PartialEq for NodeType<NodePayloadType> {
-    fn eq(&self, other: &Self) -> bool {
-        self.id == other.id
-    }
-}
-
-impl<NodePayloadType: Eq> Eq for NodeType<NodePayloadType> {}
-
 /* ------------------------------------------------------------------------
  * NODE STATE
  */

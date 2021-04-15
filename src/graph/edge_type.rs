@@ -62,14 +62,6 @@ impl<EdgePayloadType: Copy> EdgeType<EdgePayloadType> {
     }
 }
 
-impl<EdgePayloadType: Eq> PartialEq for EdgeType<EdgePayloadType> {
-    fn eq(&self, other: &Self) -> bool {
-        self.from == other.from && self.to == other.to
-    }
-}
-
-impl<EdgePayloadType: Eq> Eq for EdgeType<EdgePayloadType> {}
-
 /* ------------------------------------------------------------------------
  * UNIT TESTS
  */
