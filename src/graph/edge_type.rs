@@ -22,7 +22,7 @@ pub struct EdgeType<EdgePayloadType> {
 }
 
 impl<EdgePayloadType: Copy> EdgeType<EdgePayloadType> {
-    pub(super) fn new(
+    pub(crate) fn new(
         id: usize,
         from: NodeIdType,
         to: NodeIdType,
@@ -37,27 +37,27 @@ impl<EdgePayloadType: Copy> EdgeType<EdgePayloadType> {
         }
     }
 
-    pub(super) fn id_of(&self) -> EdgeIdType {
+    pub(crate) fn id_of(&self) -> EdgeIdType {
         self.id
     }
 
-    pub(super) fn payload_of(&self) -> EdgePayloadType {
+    pub(crate) fn payload_of(&self) -> EdgePayloadType {
         self.payload
     }
 
-    pub(super) fn payload(&mut self, payload: EdgePayloadType) {
+    pub(crate) fn payload(&mut self, payload: EdgePayloadType) {
         self.payload = payload;
     }
 
-    pub(super) fn vertices_of(&self) -> (NodeIdType, NodeIdType) {
+    pub(crate) fn vertices_of(&self) -> (NodeIdType, NodeIdType) {
         (self.from, self.to)
     }
 
-    pub(super) fn weight(&mut self, weight: f64) {
+    pub(crate) fn weight(&mut self, weight: f64) {
         self.weight = weight;
     }
 
-    pub(super) fn weight_of(&self) -> f64 {
+    pub(crate) fn weight_of(&self) -> f64 {
         self.weight
     }
 }

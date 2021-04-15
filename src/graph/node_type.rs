@@ -12,7 +12,7 @@ pub struct NodeIdType {
 }
 
 impl NodeIdType {
-    pub(super) fn new(id: usize) -> Self {
+    pub(crate) fn new(id: usize) -> Self {
         Self { id }
     }
 }
@@ -29,7 +29,7 @@ pub struct NodeType<NodePayloadType> {
 }
 
 impl<NodePayloadType: Copy> NodeType<NodePayloadType> {
-    pub(super) fn new(id: usize, payload: NodePayloadType) -> Self {
+    pub(crate) fn new(id: usize, payload: NodePayloadType) -> Self {
         Self {
             id: NodeIdType::new(id),
             incoming: vec![],
@@ -38,31 +38,31 @@ impl<NodePayloadType: Copy> NodeType<NodePayloadType> {
         }
     }
 
-    pub(super) fn id_of(&self) -> NodeIdType {
+    pub(crate) fn id_of(&self) -> NodeIdType {
         self.id
     }
 
-    pub(super) fn add_incoming(&mut self, edge_id: EdgeIdType) {
+    pub(crate) fn add_incoming(&mut self, edge_id: EdgeIdType) {
         if self.incoming.iter().find(|&id| *id == edge_id) == None {
             self.incoming.push(edge_id)
         }
     }
 
-    pub(super) fn add_outgoing(&mut self, edge_id: EdgeIdType) {
+    pub(crate) fn add_outgoing(&mut self, edge_id: EdgeIdType) {
         if self.outgoing.iter().find(|&id| *id == edge_id) == None {
             self.outgoing.push(edge_id)
         }
     }
 
-    pub(super) fn outgoing_of(&self) -> Vec<&EdgeIdType> {
+    pub(crate) fn outgoing_of(&self) -> Vec<&EdgeIdType> {
         self.outgoing.iter().collect()
     }
 
-    pub(super) fn payload(&mut self, payload: NodePayloadType) {
+    pub(crate) fn payload(&mut self, payload: NodePayloadType) {
         self.payload = payload
     }
 
-    pub(super) fn payload_of(&self) -> NodePayloadType {
+    pub(crate) fn payload_of(&self) -> NodePayloadType {
         self.payload
     }
 }
