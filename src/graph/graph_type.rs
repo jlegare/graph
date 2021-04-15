@@ -58,7 +58,10 @@ where
         Ok(id)
     }
 
-    pub fn add_nodes(&mut self, payloads: &[&'a NodePayloadType]) -> Result<Vec<NodeIdType>, String> {
+    pub fn add_nodes(
+        &mut self,
+        payloads: &[&'a NodePayloadType],
+    ) -> Result<Vec<NodeIdType>, String> {
         payloads
             .iter()
             .map(|&payload| self.add_node(payload))
@@ -463,13 +466,16 @@ mod tests {
             to
         });
 
-        let edge_ids: Vec<EdgeIdType> = edge_payloads.iter().map(|payload| {
-            let (from, to) = payload;
-            match graph.add_edge(*from, *to, &payload) {
-                Ok(edge_id) => edge_id,
-                Err(e) => std::panic::panic_any(e),
-            }
-        }).collect();
+        let edge_ids: Vec<EdgeIdType> = edge_payloads
+            .iter()
+            .map(|payload| {
+                let (from, to) = payload;
+                match graph.add_edge(*from, *to, &payload) {
+                    Ok(edge_id) => edge_id,
+                    Err(e) => std::panic::panic_any(e),
+                }
+            })
+            .collect();
 
         assert_eq!(graph.edges.len(), edge_ids.len());
         for (i, edge_id) in edge_ids.iter().enumerate() {
@@ -534,13 +540,16 @@ mod tests {
             to
         });
 
-        let _edge_ids: Vec<EdgeIdType> = edge_payloads.iter().map(|payload| {
-            let (from, to) = payload;
-            match graph.add_edge(*from, *to, &payload) {
-                Ok(edge_id) => edge_id,
-                Err(e) => std::panic::panic_any(e),
-            }
-        }).collect();
+        let _edge_ids: Vec<EdgeIdType> = edge_payloads
+            .iter()
+            .map(|payload| {
+                let (from, to) = payload;
+                match graph.add_edge(*from, *to, &payload) {
+                    Ok(edge_id) => edge_id,
+                    Err(e) => std::panic::panic_any(e),
+                }
+            })
+            .collect();
 
         graph
             .depth_first(node_ids[0], |_| {})
