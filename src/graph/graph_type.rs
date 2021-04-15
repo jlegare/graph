@@ -195,7 +195,7 @@ where
 
     node_states: HashMap<NodeIdType, NodeState>,
 
-    queue: VecDeque<NodeIdType>,
+    queue: VecDeque<(Option<EdgeIdType>, NodeIdType)>,
 }
 
 impl<'a, EdgePayloadType, NodePayloadType, CallBackType>
@@ -218,7 +218,8 @@ where
             .keys()
             .map(|node_id| (*node_id, NodeState::Undiscovered))
             .collect();
-        let queue: VecDeque<NodeIdType> = vec![source_node_id].into_iter().collect();
+        let queue: VecDeque<(Option<EdgeIdType>, NodeIdType)> =
+            vec![(None, source_node_id)].into_iter().collect();
 
         BreadthFirstIterator {
             source_node_id,
@@ -242,23 +243,20 @@ where
 
     fn next(&mut self) -> Option<(Option<EdgeIdType>, NodeIdType)> {
         while !self.queue.is_empty() {
-            let from = self.queue.pop_back().unwrap();
+            let (via, from) = self.queue.pop_back().unwrap();
 
-            for edge_id in self.nodes[&from]
-                .outgoing_of()
-                .iter()
-                .map(|edge_id| *edge_id)
-            {
+            for edge_id in self.nodes[&from].outgoing_of().into_iter() {
                 let to = self.edges[edge_id].vertices_of().1;
 
                 if *(self.node_states.get(&to).unwrap()) != NodeState::Finished {
                     *(self.node_states.get_mut(&to).unwrap()) = NodeState::Discovered;
-                    self.queue.push_front(to);
-                    return Some((Some(*edge_id), to));
+                    self.queue.push_front((Some(*edge_id), to));
                 }
             }
 
             self.node_states.insert(from, NodeState::Finished);
+
+            return Some((via, from));
         }
 
         None
@@ -480,6 +478,43 @@ mod tests {
     }
 
     #[test]
+    fn breadth_first_001() {
+        let name = "TREE";
+        let mut graph: GraphType<(), ()> = GraphType::new(name);
+        let node_ids = (1..=10)
+            .map(|_| graph.add_node(()).unwrap())
+            .collect::<Vec<NodeIdType>>();
+
+        let edges_by_id = [
+            (0, 1),
+            (0, 4),
+            (0, 8),
+            (1, 2),
+            (4, 5),
+            (4, 7),
+            (8, 9),
+            (2, 3),
+            (5, 6),
+        ];
+        let _edges: Vec<EdgeIdType> = edges_by_id
+            .iter()
+            .map(|(from, to)| graph.add_edge(node_ids[*from], node_ids[*to], ()).unwrap())
+            .collect();
+
+        let expected: Vec<NodeIdType> = vec![1, 2, 5, 9, 3, 6, 8, 10, 4, 7]
+            .into_iter()
+            .map(|id| NodeIdType::new(id as usize))
+            .collect();
+
+        let result: Vec<NodeIdType> = graph
+            .breadth_first(node_ids[0], |_| {})
+            .map(|(edge_id, node_id)| node_id)
+            .collect();
+
+        assert_eq!(expected, result);
+    }
+
+    #[test]
     fn depth_first_001() {
         let name = "GRAPH";
         let mut graph: GraphType<(NodeIdType, NodeIdType), &str> = GraphType::new(name);
@@ -533,9 +568,8 @@ mod tests {
             .map(|(from, to)| graph.add_edge(node_ids[*from], node_ids[*to], ()).unwrap())
             .collect();
 
-        let lexicographical: Vec<NodeIdType> = (1..=10)
-            .map(|id| NodeIdType::new(id as usize))
-            .collect();
+        let lexicographical: Vec<NodeIdType> =
+            (1..=10).map(|id| NodeIdType::new(id as usize)).collect();
 
         let visited: Vec<NodeIdType> = graph
             .depth_first(node_ids[0], |_| {})
