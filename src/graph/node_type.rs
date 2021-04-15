@@ -31,7 +31,7 @@ pub struct NodeType<NodePayloadType> {
 impl<NodePayloadType: Copy> NodeType<NodePayloadType> {
     pub(super) fn new(id: usize, payload: NodePayloadType) -> Self {
         Self {
-            id: NodeIdType { id },
+            id: NodeIdType::new(id),
             incoming: vec![],
             outgoing: vec![],
             payload,
@@ -106,8 +106,7 @@ mod tests {
     fn node_type_001() {
         let correct_id = 5;
         let incorrect_id = 7;
-        let payload = ();
-        let node = NodeType::<()>::new(correct_id, payload);
+        let node = NodeType::<()>::new(correct_id, ());
 
         assert_eq!(node.id, NodeIdType { id: correct_id });
         assert_ne!(node.id, NodeIdType { id: incorrect_id });
@@ -120,7 +119,20 @@ mod tests {
         let incorrect_payload = "INCORRECT";
         let node = NodeType::<&str>::new(id, correct_payload);
 
-        assert_eq!(node.payload, correct_payload);
-        assert_ne!(node.payload, incorrect_payload);
+        assert_eq!(node.payload_of(), correct_payload);
+        assert_ne!(node.payload_of(), incorrect_payload);
+    }
+
+    #[test]
+    fn node_type_003() {
+        let id = 5;
+        let correct_payload = "CORRECT";
+        let incorrect_payload = "INCORRECT";
+        let mut node = NodeType::<&str>::new(id, incorrect_payload);
+
+        node.payload(correct_payload);
+
+        assert_eq!(node.payload_of(), correct_payload);
+        assert_ne!(node.payload_of(), incorrect_payload);
     }
 }

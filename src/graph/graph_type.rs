@@ -83,7 +83,7 @@ where
         finished: CallBackType,
     ) -> BreadthFirstIterator<EdgePayloadType, NodePayloadType, CallBackType>
     where
-        CallBackType: FnMut(&NodeType<NodePayloadType>) -> (),
+        CallBackType: FnMut(&NodeType<NodePayloadType>),
     {
         BreadthFirstIterator::new(source_node_id, &self.edges, &self.nodes, finished)
     }
@@ -94,7 +94,7 @@ where
         finished: CallBackType,
     ) -> DepthFirstIterator<EdgePayloadType, NodePayloadType, CallBackType>
     where
-        CallBackType: FnMut(&NodeType<NodePayloadType>) -> (),
+        CallBackType: FnMut(&NodeType<NodePayloadType>),
     {
         DepthFirstIterator::new(source_node_id, &self.edges, &self.nodes, finished)
     }
@@ -185,7 +185,7 @@ pub struct BreadthFirstIterator<'a, EdgePayloadType, NodePayloadType, CallBackTy
 where
     EdgePayloadType: Copy + PartialEq,
     NodePayloadType: Copy + PartialEq,
-    CallBackType: FnMut(&NodeType<NodePayloadType>) -> (),
+    CallBackType: FnMut(&NodeType<NodePayloadType>),
 {
     source_node_id: NodeIdType,
     edges: &'a HashMap<EdgeIdType, EdgeType<EdgePayloadType>>,
@@ -203,7 +203,7 @@ impl<'a, EdgePayloadType, NodePayloadType, CallBackType>
 where
     EdgePayloadType: Copy + PartialEq,
     NodePayloadType: Copy + PartialEq,
-    CallBackType: FnMut(&NodeType<NodePayloadType>) -> (),
+    CallBackType: FnMut(&NodeType<NodePayloadType>),
 {
     pub fn new(
         source_node_id: NodeIdType,
@@ -212,7 +212,7 @@ where
         finished: CallBackType,
     ) -> Self
     where
-        CallBackType: FnMut(&NodeType<NodePayloadType>) -> (),
+        CallBackType: FnMut(&NodeType<NodePayloadType>),
     {
         let node_states: HashMap<NodeIdType, NodeState> = nodes
             .keys()
@@ -237,12 +237,12 @@ impl<'a, EdgePayloadType, NodePayloadType, CallBackType> Iterator
 where
     EdgePayloadType: Copy + PartialEq,
     NodePayloadType: Copy + PartialEq,
-    CallBackType: FnMut(&NodeType<NodePayloadType>) -> (),
+    CallBackType: FnMut(&NodeType<NodePayloadType>),
 {
     type Item = (Option<EdgeIdType>, NodeIdType);
 
     fn next(&mut self) -> Option<(Option<EdgeIdType>, NodeIdType)> {
-        while !self.queue.is_empty() {
+        if !self.queue.is_empty() {
             let (via, from) = self.queue.pop_back().unwrap();
 
             for edge_id in self.nodes[&from].outgoing_of().into_iter() {
@@ -256,10 +256,10 @@ where
 
             self.node_states.insert(from, NodeState::Finished);
 
-            return Some((via, from));
+            Some((via, from))
+        } else {
+            None
         }
-
-        None
     }
 }
 
@@ -271,7 +271,7 @@ pub struct DepthFirstIterator<'a, EdgePayloadType, NodePayloadType, CallBackType
 where
     EdgePayloadType: Copy + PartialEq,
     NodePayloadType: Copy + PartialEq,
-    CallBackType: FnMut(&NodeType<NodePayloadType>) -> (),
+    CallBackType: FnMut(&NodeType<NodePayloadType>),
 {
     source_node_id: NodeIdType,
     edges: &'a HashMap<EdgeIdType, EdgeType<EdgePayloadType>>,
@@ -289,7 +289,7 @@ impl<'a, EdgePayloadType, NodePayloadType, CallBackType>
 where
     EdgePayloadType: Copy + PartialEq,
     NodePayloadType: Copy + PartialEq,
-    CallBackType: FnMut(&NodeType<NodePayloadType>) -> (),
+    CallBackType: FnMut(&NodeType<NodePayloadType>),
 {
     pub fn new(
         source_node_id: NodeIdType,
@@ -298,7 +298,7 @@ where
         finished: CallBackType,
     ) -> Self
     where
-        CallBackType: FnMut(&NodeType<NodePayloadType>) -> (),
+        CallBackType: FnMut(&NodeType<NodePayloadType>),
     {
         let node_states: HashMap<NodeIdType, NodeState> = nodes
             .keys()
@@ -341,7 +341,7 @@ impl<'a, EdgePayloadType, NodePayloadType, CallBackType> Iterator
 where
     EdgePayloadType: Copy + PartialEq,
     NodePayloadType: Copy + PartialEq,
-    CallBackType: FnMut(&NodeType<NodePayloadType>) -> (),
+    CallBackType: FnMut(&NodeType<NodePayloadType>),
 {
     type Item = Result<(Option<EdgeIdType>, NodeIdType), String>;
 
@@ -404,7 +404,6 @@ type NodeIdsType = Vec<NodeIdType>;
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::graph::node_type::NodeState::Finished;
 
     #[test]
     fn name_001() {
@@ -508,7 +507,7 @@ mod tests {
 
         let result: Vec<NodeIdType> = graph
             .breadth_first(node_ids[0], |_| {})
-            .map(|(edge_id, node_id)| node_id)
+            .map(|(_, node_id)| node_id)
             .collect();
 
         assert_eq!(expected, result);
@@ -779,7 +778,7 @@ mod tests {
             .shortest_path(&sorted, &source_node_id, &target_node_id)
             .unwrap();
 
-        assert_eq!(expected_cost, result_cost);
+        assert!((expected_cost - result_cost).abs() < f64::EPSILON);
         assert_eq!(expected_path, result_path);
 
         for (i, edge) in result_edges.iter().enumerate() {

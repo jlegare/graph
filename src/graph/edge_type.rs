@@ -100,7 +100,37 @@ mod tests {
         let incorrect_payload = "7 -> 5";
         let edge = EdgeType::<&str>::new(id, from.id_of(), to.id_of(), correct_payload);
 
-        assert_eq!(edge.payload, correct_payload);
-        assert_ne!(edge.payload, incorrect_payload);
+        assert_eq!(edge.payload_of(), correct_payload);
+        assert_ne!(edge.payload_of(), incorrect_payload);
+    }
+
+    #[test]
+    fn edge_type_003() {
+        let from = NodeType::<&str>::new(5, "5");
+        let to = NodeType::<&str>::new(7, "7");
+        let id = 5;
+        let correct_payload = "5 -> 7";
+        let incorrect_payload = "7 -> 5";
+        let mut edge = EdgeType::<&str>::new(id, from.id_of(), to.id_of(), incorrect_payload);
+
+        edge.payload(correct_payload);
+
+        assert_eq!(edge.payload_of(), correct_payload);
+        assert_ne!(edge.payload_of(), incorrect_payload);
+    }
+
+    #[test]
+    fn edge_type_004() {
+        let from = NodeType::<&str>::new(5, "5");
+        let to = NodeType::<&str>::new(7, "7");
+        let id = 5;
+        let correct_weight = 1.0;
+        let incorrect_weight = 7.0;
+        let mut edge = EdgeType::<&str>::new(id, from.id_of(), to.id_of(), "5 -> 7");
+
+        edge.weight(correct_weight);
+
+        assert!((edge.weight_of() - correct_weight).abs() < f64::EPSILON);
+        assert!((edge.weight_of() - incorrect_weight).abs() > f64::EPSILON);
     }
 }
