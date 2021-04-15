@@ -21,15 +21,15 @@ impl NodeIdType {
  * NODE TYPE
  */
 #[derive(Debug)]
-pub struct NodeType<NodePayloadType> {
+pub struct NodeType<'a, NodePayloadType> {
     id: NodeIdType,
     incoming: Vec<EdgeIdType>,
     outgoing: Vec<EdgeIdType>,
-    payload: NodePayloadType,
+    payload: &'a NodePayloadType,
 }
 
-impl<NodePayloadType: Copy> NodeType<NodePayloadType> {
-    pub(crate) fn new(id: usize, payload: NodePayloadType) -> Self {
+impl<'a, NodePayloadType> NodeType<'a, NodePayloadType> {
+    pub(crate) fn new(id: usize, payload: &'a NodePayloadType) -> Self {
         Self {
             id: NodeIdType::new(id),
             incoming: vec![],
@@ -58,11 +58,11 @@ impl<NodePayloadType: Copy> NodeType<NodePayloadType> {
         self.outgoing.iter().collect()
     }
 
-    pub(crate) fn payload(&mut self, payload: NodePayloadType) {
+    pub(crate) fn payload(&mut self, payload: &'a NodePayloadType) {
         self.payload = payload
     }
 
-    pub(crate) fn payload_of(&self) -> NodePayloadType {
+    pub(crate) fn payload_of(&self) -> &'a NodePayloadType {
         self.payload
     }
 }
@@ -98,7 +98,7 @@ mod tests {
     fn node_type_001() {
         let correct_id = 5;
         let incorrect_id = 7;
-        let node = NodeType::<()>::new(correct_id, ());
+        let node = NodeType::<()>::new(correct_id, &());
 
         assert_eq!(node.id, NodeIdType { id: correct_id });
         assert_ne!(node.id, NodeIdType { id: incorrect_id });
@@ -109,10 +109,10 @@ mod tests {
         let id = 5;
         let correct_payload = "CORRECT";
         let incorrect_payload = "INCORRECT";
-        let node = NodeType::<&str>::new(id, correct_payload);
+        let node = NodeType::<&str>::new(id, &correct_payload);
 
-        assert_eq!(node.payload_of(), correct_payload);
-        assert_ne!(node.payload_of(), incorrect_payload);
+        assert_eq!(node.payload_of(), &correct_payload);
+        assert_ne!(node.payload_of(), &incorrect_payload);
     }
 
     #[test]
@@ -120,11 +120,11 @@ mod tests {
         let id = 5;
         let correct_payload = "CORRECT";
         let incorrect_payload = "INCORRECT";
-        let mut node = NodeType::<&str>::new(id, incorrect_payload);
+        let mut node = NodeType::<&str>::new(id, &incorrect_payload);
 
-        node.payload(correct_payload);
+        node.payload(&correct_payload);
 
-        assert_eq!(node.payload_of(), correct_payload);
-        assert_ne!(node.payload_of(), incorrect_payload);
+        assert_eq!(node.payload_of(), &correct_payload);
+        assert_ne!(node.payload_of(), &incorrect_payload);
     }
 }

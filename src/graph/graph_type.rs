@@ -8,20 +8,20 @@ use crate::graph::node_type::{NodeIdType, NodeState, NodeType};
  * GRAPH TYPE
  */
 #[derive(Debug)]
-pub struct GraphType<EdgePayloadType, NodePayloadType>
+pub struct GraphType<'a, EdgePayloadType, NodePayloadType>
 where
-    EdgePayloadType: Copy + PartialEq,
-    NodePayloadType: Copy + PartialEq,
+    EdgePayloadType: PartialEq,
+    NodePayloadType: PartialEq,
 {
     name: String,
-    edges: HashMap<EdgeIdType, EdgeType<EdgePayloadType>>,
-    nodes: HashMap<NodeIdType, NodeType<NodePayloadType>>,
+    edges: HashMap<EdgeIdType, EdgeType<'a, EdgePayloadType>>,
+    nodes: HashMap<NodeIdType, NodeType<'a, NodePayloadType>>,
 }
 
-impl<EdgePayloadType, NodePayloadType> GraphType<EdgePayloadType, NodePayloadType>
+impl<'a, EdgePayloadType, NodePayloadType> GraphType<'a, EdgePayloadType, NodePayloadType>
 where
-    EdgePayloadType: Copy + PartialEq,
-    NodePayloadType: Copy + PartialEq,
+    EdgePayloadType: PartialEq,
+    NodePayloadType: PartialEq,
 {
     pub fn new(name: &str) -> Self {
         GraphType {
@@ -35,7 +35,7 @@ where
         &mut self,
         from: NodeIdType,
         to: NodeIdType,
-        payload: EdgePayloadType,
+        payload: &'a EdgePayloadType,
     ) -> Result<EdgeIdType, String> {
         if !self.nodes.contains_key(&from) {
             Err(format!("The node {:?} does not exist.", from))
@@ -51,14 +51,14 @@ where
         }
     }
 
-    pub fn add_node(&mut self, payload: NodePayloadType) -> Result<NodeIdType, String> {
+    pub fn add_node(&mut self, payload: &'a NodePayloadType) -> Result<NodeIdType, String> {
         let node = NodeType::new(self.nodes.len() + 1, payload); // The "+ 1" is to make IDs start at 1.
         let id = node.id_of();
         self.nodes.insert(id, node);
         Ok(id)
     }
 
-    pub fn add_nodes(&mut self, payloads: &[NodePayloadType]) -> Result<Vec<NodeIdType>, String> {
+    pub fn add_nodes(&mut self, payloads: &[&'a NodePayloadType]) -> Result<Vec<NodeIdType>, String> {
         payloads
             .iter()
             .map(|&payload| self.add_node(payload))
@@ -78,10 +78,10 @@ where
     }
 
     pub fn breadth_first<CallBackType>(
-        &self,
+        &'a self,
         source_node_id: NodeIdType,
         finished: CallBackType,
-    ) -> BreadthFirstIterator<EdgePayloadType, NodePayloadType, CallBackType>
+    ) -> BreadthFirstIterator<'a, EdgePayloadType, NodePayloadType, CallBackType>
     where
         CallBackType: FnMut(&NodeType<NodePayloadType>),
     {
@@ -89,10 +89,10 @@ where
     }
 
     pub fn depth_first<CallBackType>(
-        &self,
+        &'a self,
         source_node_id: NodeIdType,
         finished: CallBackType,
-    ) -> DepthFirstIterator<EdgePayloadType, NodePayloadType, CallBackType>
+    ) -> DepthFirstIterator<'a, EdgePayloadType, NodePayloadType, CallBackType>
     where
         CallBackType: FnMut(&NodeType<NodePayloadType>),
     {
@@ -183,13 +183,13 @@ where
 #[derive(Debug)]
 pub struct BreadthFirstIterator<'a, EdgePayloadType, NodePayloadType, CallBackType>
 where
-    EdgePayloadType: Copy + PartialEq,
-    NodePayloadType: Copy + PartialEq,
-    CallBackType: FnMut(&NodeType<NodePayloadType>),
+    EdgePayloadType: PartialEq,
+    NodePayloadType: PartialEq,
+    CallBackType: FnMut(&NodeType<'a, NodePayloadType>),
 {
     source_node_id: NodeIdType,
-    edges: &'a HashMap<EdgeIdType, EdgeType<EdgePayloadType>>,
-    nodes: &'a HashMap<NodeIdType, NodeType<NodePayloadType>>,
+    edges: &'a HashMap<EdgeIdType, EdgeType<'a, EdgePayloadType>>,
+    nodes: &'a HashMap<NodeIdType, NodeType<'a, NodePayloadType>>,
 
     finished: CallBackType,
 
@@ -201,18 +201,18 @@ where
 impl<'a, EdgePayloadType, NodePayloadType, CallBackType>
     BreadthFirstIterator<'a, EdgePayloadType, NodePayloadType, CallBackType>
 where
-    EdgePayloadType: Copy + PartialEq,
-    NodePayloadType: Copy + PartialEq,
-    CallBackType: FnMut(&NodeType<NodePayloadType>),
+    EdgePayloadType: PartialEq,
+    NodePayloadType: PartialEq,
+    CallBackType: FnMut(&NodeType<'a, NodePayloadType>),
 {
     pub fn new(
         source_node_id: NodeIdType,
-        edges: &'a HashMap<EdgeIdType, EdgeType<EdgePayloadType>>,
-        nodes: &'a HashMap<NodeIdType, NodeType<NodePayloadType>>,
+        edges: &'a HashMap<EdgeIdType, EdgeType<'a, EdgePayloadType>>,
+        nodes: &'a HashMap<NodeIdType, NodeType<'a, NodePayloadType>>,
         finished: CallBackType,
     ) -> Self
     where
-        CallBackType: FnMut(&NodeType<NodePayloadType>),
+        CallBackType: FnMut(&NodeType<'a, NodePayloadType>),
     {
         let node_states: HashMap<NodeIdType, NodeState> = nodes
             .keys()
@@ -235,9 +235,9 @@ where
 impl<'a, EdgePayloadType, NodePayloadType, CallBackType> Iterator
     for BreadthFirstIterator<'a, EdgePayloadType, NodePayloadType, CallBackType>
 where
-    EdgePayloadType: Copy + PartialEq,
-    NodePayloadType: Copy + PartialEq,
-    CallBackType: FnMut(&NodeType<NodePayloadType>),
+    EdgePayloadType: PartialEq,
+    NodePayloadType: PartialEq,
+    CallBackType: FnMut(&NodeType<'a, NodePayloadType>),
 {
     type Item = (Option<EdgeIdType>, NodeIdType);
 
@@ -269,13 +269,13 @@ where
 #[derive(Debug)]
 pub struct DepthFirstIterator<'a, EdgePayloadType, NodePayloadType, CallBackType>
 where
-    EdgePayloadType: Copy + PartialEq,
-    NodePayloadType: Copy + PartialEq,
-    CallBackType: FnMut(&NodeType<NodePayloadType>),
+    EdgePayloadType: PartialEq,
+    NodePayloadType: PartialEq,
+    CallBackType: FnMut(&NodeType<'a, NodePayloadType>),
 {
     source_node_id: NodeIdType,
-    edges: &'a HashMap<EdgeIdType, EdgeType<EdgePayloadType>>,
-    nodes: &'a HashMap<NodeIdType, NodeType<NodePayloadType>>,
+    edges: &'a HashMap<EdgeIdType, EdgeType<'a, EdgePayloadType>>,
+    nodes: &'a HashMap<NodeIdType, NodeType<'a, NodePayloadType>>,
 
     finished: CallBackType,
 
@@ -287,18 +287,18 @@ where
 impl<'a, EdgePayloadType, NodePayloadType, CallBackType>
     DepthFirstIterator<'a, EdgePayloadType, NodePayloadType, CallBackType>
 where
-    EdgePayloadType: Copy + PartialEq,
-    NodePayloadType: Copy + PartialEq,
-    CallBackType: FnMut(&NodeType<NodePayloadType>),
+    EdgePayloadType: PartialEq,
+    NodePayloadType: PartialEq,
+    CallBackType: FnMut(&NodeType<'a, NodePayloadType>),
 {
     pub fn new(
         source_node_id: NodeIdType,
-        edges: &'a HashMap<EdgeIdType, EdgeType<EdgePayloadType>>,
-        nodes: &'a HashMap<NodeIdType, NodeType<NodePayloadType>>,
+        edges: &'a HashMap<EdgeIdType, EdgeType<'a, EdgePayloadType>>,
+        nodes: &'a HashMap<NodeIdType, NodeType<'a, NodePayloadType>>,
         finished: CallBackType,
     ) -> Self
     where
-        CallBackType: FnMut(&NodeType<NodePayloadType>),
+        CallBackType: FnMut(&NodeType<'a, NodePayloadType>),
     {
         let node_states: HashMap<NodeIdType, NodeState> = nodes
             .keys()
@@ -339,9 +339,9 @@ where
 impl<'a, EdgePayloadType, NodePayloadType, CallBackType> Iterator
     for DepthFirstIterator<'a, EdgePayloadType, NodePayloadType, CallBackType>
 where
-    EdgePayloadType: Copy + PartialEq,
-    NodePayloadType: Copy + PartialEq,
-    CallBackType: FnMut(&NodeType<NodePayloadType>),
+    EdgePayloadType: PartialEq,
+    NodePayloadType: PartialEq,
+    CallBackType: FnMut(&NodeType<'a, NodePayloadType>),
 {
     type Item = Result<(Option<EdgeIdType>, NodeIdType), String>;
 
@@ -422,7 +422,7 @@ mod tests {
         let payloads = vec!["FIRST", "SECOND", "THIRD"];
         let node_ids: Vec<NodeIdType> = payloads
             .iter()
-            .map(|payload| graph.add_node(payload).unwrap())
+            .map(|payload| graph.add_node(&payload).unwrap())
             .collect();
 
         assert_eq!(graph.nodes.len(), payloads.len());
@@ -435,7 +435,7 @@ mod tests {
     fn add_nodes_001() {
         let name = "GRAPH";
         let mut graph: GraphType<(), &str> = GraphType::new(name);
-        let payloads = vec!["FIRST", "SECOND", "THIRD"];
+        let payloads = vec![&"FIRST", &"SECOND", &"THIRD"];
         let node_ids = match graph.add_nodes(&payloads) {
             Ok(node_ids) => node_ids,
             Err(e) => std::panic::panic_any(e),
@@ -451,20 +451,25 @@ mod tests {
     fn add_edge_001() {
         let name = "GRAPH";
         let mut graph: GraphType<(NodeIdType, NodeIdType), &str> = GraphType::new(name);
-        let payloads = vec!["FIRST", "SECOND", "THIRD", "FOURTH", "FIFTH"];
-        let node_ids = match graph.add_nodes(&payloads) {
+        let node_payloads = vec![&"FIRST", &"SECOND", &"THIRD", &"FOURTH", &"FIFTH"];
+        let node_ids = match graph.add_nodes(&node_payloads) {
             Ok(node_ids) => node_ids,
             Err(e) => std::panic::panic_any(e),
         };
 
-        let mut edge_ids = vec![];
+        let mut edge_payloads = vec![];
         node_ids[1..].iter().fold(node_ids[0], |from, &to| {
-            match graph.add_edge(from, to, (from, to)) {
-                Ok(edge_id) => edge_ids.push(edge_id),
-                Err(e) => std::panic::panic_any(e),
-            };
+            edge_payloads.push((from, to));
             to
         });
+
+        let edge_ids: Vec<EdgeIdType> = edge_payloads.iter().map(|payload| {
+            let (from, to) = payload;
+            match graph.add_edge(*from, *to, &payload) {
+                Ok(edge_id) => edge_id,
+                Err(e) => std::panic::panic_any(e),
+            }
+        }).collect();
 
         assert_eq!(graph.edges.len(), edge_ids.len());
         for (i, edge_id) in edge_ids.iter().enumerate() {
@@ -481,7 +486,7 @@ mod tests {
         let name = "TREE";
         let mut graph: GraphType<(), ()> = GraphType::new(name);
         let node_ids = (1..=10)
-            .map(|_| graph.add_node(()).unwrap())
+            .map(|_| graph.add_node(&()).unwrap())
             .collect::<Vec<NodeIdType>>();
 
         let edges_by_id = [
@@ -497,7 +502,7 @@ mod tests {
         ];
         let _edges: Vec<EdgeIdType> = edges_by_id
             .iter()
-            .map(|(from, to)| graph.add_edge(node_ids[*from], node_ids[*to], ()).unwrap())
+            .map(|(from, to)| graph.add_edge(node_ids[*from], node_ids[*to], &()).unwrap())
             .collect();
 
         let expected: Vec<NodeIdType> = vec![1, 2, 5, 9, 3, 6, 8, 10, 4, 7]
@@ -517,20 +522,25 @@ mod tests {
     fn depth_first_001() {
         let name = "GRAPH";
         let mut graph: GraphType<(NodeIdType, NodeIdType), &str> = GraphType::new(name);
-        let payloads = vec!["FIRST", "SECOND", "THIRD", "FOURTH", "FIFTH"];
-        let node_ids = match graph.add_nodes(&payloads) {
+        let node_payloads = vec![&"FIRST", &"SECOND", &"THIRD", &"FOURTH", &"FIFTH"];
+        let node_ids = match graph.add_nodes(&node_payloads) {
             Ok(node_ids) => node_ids,
             Err(e) => std::panic::panic_any(e),
         };
 
-        let mut edge_ids = vec![];
+        let mut edge_payloads = vec![];
         node_ids[1..].iter().fold(node_ids[0], |from, &to| {
-            match graph.add_edge(from, to, (from, to)) {
-                Ok(edge_id) => edge_ids.push(edge_id),
-                Err(e) => std::panic::panic_any(e),
-            };
+            edge_payloads.push((from, to));
             to
         });
+
+        let _edge_ids: Vec<EdgeIdType> = edge_payloads.iter().map(|payload| {
+            let (from, to) = payload;
+            match graph.add_edge(*from, *to, &payload) {
+                Ok(edge_id) => edge_id,
+                Err(e) => std::panic::panic_any(e),
+            }
+        }).collect();
 
         graph
             .depth_first(node_ids[0], |_| {})
@@ -548,7 +558,7 @@ mod tests {
         let name = "TREE";
         let mut graph: GraphType<(), ()> = GraphType::new(name);
         let node_ids = (1..=10)
-            .map(|_| graph.add_node(()).unwrap())
+            .map(|_| graph.add_node(&()).unwrap())
             .collect::<Vec<NodeIdType>>();
 
         let edges_by_id = [
@@ -564,7 +574,7 @@ mod tests {
         ];
         let _edges: Vec<EdgeIdType> = edges_by_id
             .iter()
-            .map(|(from, to)| graph.add_edge(node_ids[*from], node_ids[*to], ()).unwrap())
+            .map(|(from, to)| graph.add_edge(node_ids[*from], node_ids[*to], &()).unwrap())
             .collect();
 
         let lexicographical: Vec<NodeIdType> =
@@ -586,26 +596,26 @@ mod tests {
         let name = "DAG";
         let mut graph: GraphType<(), ()> = GraphType::new(name);
         let node_ids = (1..=11)
-            .map(|_| graph.add_node(()).unwrap())
+            .map(|_| graph.add_node(&()).unwrap())
             .collect::<Vec<NodeIdType>>();
 
-        graph.add_edge(node_ids[0], node_ids[1], ()).unwrap();
-        graph.add_edge(node_ids[0], node_ids[4], ()).unwrap();
-        graph.add_edge(node_ids[0], node_ids[8], ()).unwrap();
+        graph.add_edge(node_ids[0], node_ids[1], &()).unwrap();
+        graph.add_edge(node_ids[0], node_ids[4], &()).unwrap();
+        graph.add_edge(node_ids[0], node_ids[8], &()).unwrap();
 
-        graph.add_edge(node_ids[1], node_ids[2], ()).unwrap();
+        graph.add_edge(node_ids[1], node_ids[2], &()).unwrap();
 
-        graph.add_edge(node_ids[4], node_ids[5], ()).unwrap();
-        graph.add_edge(node_ids[4], node_ids[7], ()).unwrap();
+        graph.add_edge(node_ids[4], node_ids[5], &()).unwrap();
+        graph.add_edge(node_ids[4], node_ids[7], &()).unwrap();
 
-        graph.add_edge(node_ids[8], node_ids[9], ()).unwrap();
-        graph.add_edge(node_ids[2], node_ids[3], ()).unwrap();
-        graph.add_edge(node_ids[5], node_ids[6], ()).unwrap();
+        graph.add_edge(node_ids[8], node_ids[9], &()).unwrap();
+        graph.add_edge(node_ids[2], node_ids[3], &()).unwrap();
+        graph.add_edge(node_ids[5], node_ids[6], &()).unwrap();
 
-        graph.add_edge(node_ids[3], node_ids[10], ()).unwrap();
-        graph.add_edge(node_ids[6], node_ids[10], ()).unwrap();
-        graph.add_edge(node_ids[7], node_ids[10], ()).unwrap();
-        graph.add_edge(node_ids[9], node_ids[10], ()).unwrap();
+        graph.add_edge(node_ids[3], node_ids[10], &()).unwrap();
+        graph.add_edge(node_ids[6], node_ids[10], &()).unwrap();
+        graph.add_edge(node_ids[7], node_ids[10], &()).unwrap();
+        graph.add_edge(node_ids[9], node_ids[10], &()).unwrap();
 
         let visited_expected: Vec<NodeIdType> = [1, 2, 3, 4, 11, 5, 6, 7, 8, 9, 10]
             .iter()
@@ -636,7 +646,7 @@ mod tests {
         let name = "DAG";
         let mut graph: GraphType<(), u32> = GraphType::new(name);
 
-        let node_payloads = vec![2, 3, 4, 5, 6, 7, 1];
+        let node_payloads = vec![&2, &3, &4, &5, &6, &7, &1];
         let node_ids = graph.add_nodes(&node_payloads).unwrap();
 
         let edges = [
@@ -651,11 +661,11 @@ mod tests {
         ];
         let _edges: Vec<EdgeIdType> = edges
             .iter()
-            .map(|(from, to)| graph.add_edge(node_ids[*from], node_ids[*to], ()).unwrap())
+            .map(|(from, to)| graph.add_edge(node_ids[*from], node_ids[*to], &()).unwrap())
             .collect();
         let expected = [2, 3, 4, 6, 5];
 
-        let result: Vec<u32> = graph
+        let result: Vec<&u32> = graph
             .depth_first(node_ids[0], |_| {})
             .map(|result| match result {
                 Ok((_, node_id)) => graph.nodes[&node_id].payload_of(),
@@ -666,11 +676,11 @@ mod tests {
         expected
             .iter()
             .zip(result)
-            .for_each(|(left, right)| assert_eq!(left, &right));
+            .for_each(|(left, right)| assert_eq!(left, right));
 
         let expected = [1, 7, 4, 6, 3, 5];
 
-        let result: Vec<u32> = graph
+        let result: Vec<&u32> = graph
             .depth_first(node_ids[6], |_| {})
             .map(|result| match result {
                 Ok((_, node_id)) => graph.nodes[&node_id].payload_of(),
@@ -681,7 +691,7 @@ mod tests {
         expected
             .iter()
             .zip(result)
-            .for_each(|(left, right)| assert_eq!(left, &right));
+            .for_each(|(left, right)| assert_eq!(left, right));
     }
 
     #[test]
@@ -690,13 +700,13 @@ mod tests {
         let name = "CYCLE DETECTION";
         let mut graph: GraphType<(), u32> = GraphType::new(name);
 
-        let node_payloads = vec![2, 3, 6];
+        let node_payloads = vec![&2, &3, &6];
         let node_ids = graph.add_nodes(&node_payloads).unwrap();
 
         let edges = vec![(0, 1), (1, 2), (2, 0)];
         let _edges: Vec<EdgeIdType> = edges
             .iter()
-            .map(|(from, to)| graph.add_edge(node_ids[*from], node_ids[*to], ()).unwrap())
+            .map(|(from, to)| graph.add_edge(node_ids[*from], node_ids[*to], &()).unwrap())
             .collect();
 
         graph
@@ -711,7 +721,7 @@ mod tests {
     fn shortest_path_01() {
         let name = "SHORTEST PATH";
         let mut graph: GraphType<u32, u32> = GraphType::new(name);
-        let node_payloads = vec![1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11];
+        let node_payloads = vec![&1, &2, &3, &4, &5, &6, &7, &8, &9, &10, &11];
         let node_ids = match graph.add_nodes(&node_payloads) {
             Ok(node_ids) => node_ids,
             Err(e) => std::panic::panic_any(e),
@@ -737,7 +747,7 @@ mod tests {
             .iter()
             .map(|(from, to, payload, weight)| {
                 let edge_id = graph
-                    .add_edge(node_ids[*from], node_ids[*to], *payload)
+                    .add_edge(node_ids[*from], node_ids[*to], payload)
                     .unwrap();
                 graph
                     .edges
