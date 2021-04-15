@@ -412,9 +412,10 @@ mod tests {
     #[test]
     fn depth_first_002() {
         let name = "TREE";
-        let mut graph: GraphType<(), u64> = GraphType::new(name);
-        let payloads = vec![1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
-        let node_ids = graph.add_nodes(&payloads).unwrap();
+        let mut graph: GraphType<(), ()> = GraphType::new(name);
+        let node_ids = (1..=10)
+            .map(|_| graph.add_node(()).unwrap())
+            .collect::<Vec<NodeIdType>>();
 
         let edges_by_id = [
             (0, 1),
@@ -432,9 +433,8 @@ mod tests {
             .map(|(from, to)| graph.add_edge(node_ids[*from], node_ids[*to], ()).unwrap())
             .collect();
 
-        let lexicographical: Vec<NodeIdType> = payloads
-            .iter()
-            .map(|&id| NodeIdType::new(id as usize))
+        let lexicographical: Vec<NodeIdType> = (1..=10)
+            .map(|id| NodeIdType::new(id as usize))
             .collect();
 
         let visited: Vec<NodeIdType> = graph
