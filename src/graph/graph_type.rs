@@ -1,3 +1,4 @@
+use std::collections::vec_deque::VecDeque;
 use std::collections::HashMap;
 
 use crate::graph::edge_type::{EdgeIdType, EdgeType};
@@ -74,6 +75,17 @@ where
         // It was the caller's responsibility to check that to is present in self.nodes. So we can go ahead and unwrap()
         // without further ado.
         self.nodes.get_mut(&from).unwrap().add_outgoing(edge)
+    }
+
+    pub fn breadth_first<CallBackType>(
+        &self,
+        source_node_id: NodeIdType,
+        finished: CallBackType,
+    ) -> BreadthFirstIterator<EdgePayloadType, NodePayloadType, CallBackType>
+    where
+        CallBackType: FnMut(&NodeType<NodePayloadType>) -> (),
+    {
+        BreadthFirstIterator::new(source_node_id, &self.edges, &self.nodes, finished)
     }
 
     pub fn depth_first<CallBackType>(
@@ -162,6 +174,94 @@ where
             path.iter().map(|i| edges[i]).rev().collect(),
             path.into_iter().rev().collect(),
         ))
+    }
+}
+
+/* ------------------------------------------------------------------------
+ * BREADTH FIRST ITERATOR
+ */
+#[derive(Debug)]
+pub struct BreadthFirstIterator<'a, EdgePayloadType, NodePayloadType, CallBackType>
+where
+    EdgePayloadType: Copy + PartialEq,
+    NodePayloadType: Copy + PartialEq,
+    CallBackType: FnMut(&NodeType<NodePayloadType>) -> (),
+{
+    source_node_id: NodeIdType,
+    edges: &'a HashMap<EdgeIdType, EdgeType<EdgePayloadType>>,
+    nodes: &'a HashMap<NodeIdType, NodeType<NodePayloadType>>,
+
+    finished: CallBackType,
+
+    node_states: HashMap<NodeIdType, NodeState>,
+
+    queue: VecDeque<NodeIdType>,
+}
+
+impl<'a, EdgePayloadType, NodePayloadType, CallBackType>
+    BreadthFirstIterator<'a, EdgePayloadType, NodePayloadType, CallBackType>
+where
+    EdgePayloadType: Copy + PartialEq,
+    NodePayloadType: Copy + PartialEq,
+    CallBackType: FnMut(&NodeType<NodePayloadType>) -> (),
+{
+    pub fn new(
+        source_node_id: NodeIdType,
+        edges: &'a HashMap<EdgeIdType, EdgeType<EdgePayloadType>>,
+        nodes: &'a HashMap<NodeIdType, NodeType<NodePayloadType>>,
+        finished: CallBackType,
+    ) -> Self
+    where
+        CallBackType: FnMut(&NodeType<NodePayloadType>) -> (),
+    {
+        let node_states: HashMap<NodeIdType, NodeState> = nodes
+            .keys()
+            .map(|node_id| (*node_id, NodeState::Undiscovered))
+            .collect();
+        let queue: VecDeque<NodeIdType> = vec![source_node_id].into_iter().collect();
+
+        BreadthFirstIterator {
+            source_node_id,
+            edges,
+            nodes,
+            finished,
+            node_states,
+            queue,
+        }
+    }
+}
+
+impl<'a, EdgePayloadType, NodePayloadType, CallBackType> Iterator
+    for BreadthFirstIterator<'a, EdgePayloadType, NodePayloadType, CallBackType>
+where
+    EdgePayloadType: Copy + PartialEq,
+    NodePayloadType: Copy + PartialEq,
+    CallBackType: FnMut(&NodeType<NodePayloadType>) -> (),
+{
+    type Item = (Option<EdgeIdType>, NodeIdType);
+
+    fn next(&mut self) -> Option<(Option<EdgeIdType>, NodeIdType)> {
+        while !self.queue.is_empty() {
+            let from = self.queue.pop_back().unwrap();
+
+            for edge_id in self.nodes[&from]
+                .outgoing_of()
+                .iter()
+                .map(|edge_id| *edge_id)
+            {
+                let to = self.edges[edge_id].vertices_of().1;
+
+                if *(self.node_states.get(&to).unwrap()) != NodeState::Finished {
+                    *(self.node_states.get_mut(&to).unwrap()) = NodeState::Discovered;
+                    self.queue.push_front(to);
+                    return Some((Some(*edge_id), to));
+                }
+            }
+
+            self.node_states.insert(from, NodeState::Finished);
+        }
+
+        None
     }
 }
 
