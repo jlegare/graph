@@ -109,47 +109,28 @@ where
         target_node_id: &NodeIdType,
     ) -> Result<(f64, EdgeIdsType, NodeIdsType), String> {
         // This implementation assumes that the nodes have been topologically-sorted ... i.e., run through depth_first().
-        type ChildrensType = HashMap<NodeIdType, HashMap<NodeIdType, EdgeIdType>>;
-        type CostsType = HashMap<NodeIdType, f64>;
-        type EdgesType = HashMap<NodeIdType, Option<EdgeIdType>>;
-        type PredecessorsType = HashMap<NodeIdType, Option<NodeIdType>>;
+        let mut scratches: HashMap<NodeIdType, ScratchType> = sorted
+            .iter()
+            .map(|&node_id| (node_id, ScratchType::new(node_id, &self.nodes, &self.edges)))
+            .collect();
 
-        let mut childrens = ChildrensType::new();
-        let mut costs = CostsType::new();
-        let mut edges = EdgesType::new();
-        let mut predecessors = PredecessorsType::new();
+        scratches.get_mut(source_node_id).unwrap().cost = 0.0;
 
-        let initialize = |childrens: &mut ChildrensType,
-                          costs: &mut CostsType,
-                          edges: &mut EdgesType,
-                          predecessors: &mut PredecessorsType| {
-            self.nodes.keys().for_each(|&node_id| {
-                costs.insert(node_id, f64::INFINITY);
-                edges.insert(node_id, None);
-                predecessors.insert(node_id, None);
+        let cost_edges = |scratches: &mut HashMap<NodeIdType, ScratchType>| {
+            let mut relax = |from_id: &NodeIdType, to_id: &NodeIdType| {
+                let from = scratches.get(from_id).unwrap();
+                let edge_id = &from.children.get(to_id).copied().unwrap();
+                let weight = self.edges[edge_id].weight_of();
+                let cost = from.cost;
 
-                childrens.insert(node_id, HashMap::new());
-                let children = childrens.get_mut(&node_id).unwrap();
-                self.nodes[&node_id].outgoing_of().iter().for_each(|&edge| {
-                    let (_, to) = &self.edges[&edge].vertices_of();
-                    children.insert(*to, *edge);
-                });
-            });
-            *costs.get_mut(source_node_id).unwrap() = 0.0;
-        };
+                let to = scratches.get(to_id).unwrap();
 
-        let cost_edges = |childrens: &mut ChildrensType,
-                          costs: &mut CostsType,
-                          edges: &mut EdgesType,
-                          predecessors: &mut PredecessorsType| {
-            let mut relax = |from: &NodeIdType, to: &NodeIdType| {
-                let children = childrens.get(from).unwrap();
+                if to.cost > cost + weight {
+                    let to = scratches.get_mut(to_id).unwrap();
 
-                let edge = children.get(to).unwrap();
-                if costs[to] > costs[from] + self.edges[edge].weight_of() {
-                    *costs.get_mut(to).unwrap() = costs[from] + self.edges[edge].weight_of();
-                    *predecessors.get_mut(to).unwrap() = Some(*from);
-                    *edges.get_mut(to).unwrap() = Some(*edge);
+                    to.cost = cost + weight;
+                    to.predecessor = Some(*from_id);
+                    to.edge = Some(*edge_id);
                 }
             };
 
@@ -161,20 +142,19 @@ where
             });
         };
 
-        initialize(&mut childrens, &mut costs, &mut edges, &mut predecessors);
-        cost_edges(&mut childrens, &mut costs, &mut edges, &mut predecessors);
+        cost_edges(&mut scratches);
 
         let mut path: Vec<NodeIdType> = vec![];
         let mut current_node = Some(target_node_id);
 
         while let Some(node) = current_node {
             path.push(*node);
-            current_node = predecessors[node].as_ref();
+            current_node = scratches[node].predecessor.as_ref();
         }
 
         Ok((
-            costs[target_node_id],
-            path.iter().map(|i| edges[i]).rev().collect(),
+            scratches[target_node_id].cost,
+            path.iter().map(|i| scratches[i].edge).rev().collect(),
             path.into_iter().rev().collect(),
         ))
     }
@@ -377,6 +357,39 @@ where
     }
 }
 
+/* ------------------------------------------------------------------------
+ * SCRATCH TYPE ... This is a helper struct used in shortest_path(), to (hopefully) clarify the code.
+ */
+#[derive(Debug)]
+struct ScratchType {
+    node_id: NodeIdType,
+    children: HashMap<NodeIdType, EdgeIdType>,
+    cost: f64,
+    edge: Option<EdgeIdType>,
+    predecessor: Option<NodeIdType>,
+}
+
+impl ScratchType {
+    pub fn new<EdgePayloadType, NodePayloadType>(
+        node_id: NodeIdType,
+        nodes: &HashMap<NodeIdType, NodeType<NodePayloadType>>,
+        edges: &HashMap<EdgeIdType, EdgeType<EdgePayloadType>>,
+    ) -> Self {
+        let mut children = HashMap::new();
+        nodes[&node_id].outgoing_of().iter().for_each(|&edge| {
+            let (_, to) = &edges[&edge].vertices_of();
+            children.insert(*to, *edge);
+        });
+
+        ScratchType {
+            node_id,
+            children,
+            cost: f64::INFINITY,
+            edge: None,
+            predecessor: None,
+        }
+    }
+}
 /* ------------------------------------------------------------------------
  * STACK ITEM TYPE ... This is a helper struct used in depth_first(), to (hopefully) clarify the code.
  */
